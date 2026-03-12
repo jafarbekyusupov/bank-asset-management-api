@@ -43,21 +43,13 @@ spring:
     enabled: true
     baseline-on-migrate: true
 
-  mail:
-    host: localhost
-    port: 1025 
-    properties:
-      mail:
-        smtp:
-          auth: false
-          starttls:
-            enable: false
-
 app:
   jwt:
     secret: local-dev-secret-key-160-bits-is-not-secure-enough
     expiration-ms: 86400000
     refresh-expiration-ms: 604800000
+  resend:
+    api-key: local-dev
   email:
     from: ${MAIL_FROM:noreply@bank-assets.com}
     base-url: ${APP_BASE_URL:http://localhost:8081}
@@ -104,22 +96,12 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
-  mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-
 app:
   jwt:
     secret: ${JWT_SECRET}
     expiration-ms: 86400000
+  resend:
+    api-key: ${RESEND_API_KEY}
   email:
     from: ${MAIL_FROM}
     base-url: ${APP_BASE_URL}
