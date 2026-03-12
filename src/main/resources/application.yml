@@ -90,10 +90,12 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate 
+      ddl-auto: none
     show-sql: false
     properties:
       hibernate:
+        temp:
+          use_jdbc_metadata_defaults: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
         jdbc:
           time_zone: UTC
