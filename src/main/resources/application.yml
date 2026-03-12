@@ -129,6 +129,9 @@ app:
     access-key: ${MINIO_ACCESS_KEY}
     secret-key: ${MINIO_SECRET_KEY}
     bucket-name: ${MINIO_BUCKET}
+  qr:
+    base-url: ${QR_BASE_URL}
+    size: 300
 
 logging:
   level:
