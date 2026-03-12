@@ -1,0 +1,103 @@
+package com.bank.assets.modules.asset;
+
+import com.bank.assets.common.enums.AssetStatus;
+import com.bank.assets.common.response.ApiResponse;
+import com.bank.assets.common.response.PageResponse;
+import com.bank.assets.modules.asset.dto.AssetResponse;
+import com.bank.assets.modules.asset.dto.CreateAssetRequest;
+import com.bank.assets.modules.asset.dto.UpdateAssetRequest;
+import com.bank.assets.modules.user.User;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.UUID;
+
+@RestController
+@Tag(name="Asset")
+@RequestMapping("/asset")
+@RequiredArgsConstructor
+public class AssetController {
+    private final AssetService assetService;
+    private final StorageService storageService;
+
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<AssetResponse>> create(
+        @Valid @RequestBody CreateAssetRequest req,
+        @AuthenticationPrincipal User currentUser
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+            ApiResponse.ok("Asset created.", assetService.create(req, currentUser))
+        );
+    }
+
+    @GetMapping("/list")
+    public ResponseEntity<ApiResponse<PageResponse<AssetResponse>>> list(
+        @RequestParam(required = false) AssetStatus status,
+        @RequestParam(required = false) UUID categoryId,
+        @RequestParam(required = false) UUID typeId,
+        @RequestParam(required = false) UUID ownerId,
+        @RequestParam(required = false) UUID deptId,
+        @RequestParam(required = false) String search,
+        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(
+            PageResponse.from(assetService.list(status, categoryId, typeId, ownerId, deptId, search, pageable))
+        ));
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<ApiResponse<PageResponse<AssetResponse>>> myAssets(
+        @AuthenticationPrincipal User currentUser,
+        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(
+            PageResponse.from(assetService.list(null, null, null, currentUser.getId(), null, null, pageable))
+        ));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<AssetResponse>> getById(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok(assetService.getById(id)));
+    }
+
+    @PatchMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<AssetResponse>> update(
+        @PathVariable UUID id,
+        @RequestBody UpdateAssetRequest req,
+        @AuthenticationPrincipal User currentUser
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok("Asset updated.", assetService.update(id, req, currentUser)));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
+        assetService.delete(id);
+        return ResponseEntity.ok(ApiResponse.ok("Asset deleted."));
+    }
+
+    @PostMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<AssetResponse>> uploadImage(
+        @PathVariable UUID id,
+        @RequestPart("file") MultipartFile file,
+        @AuthenticationPrincipal User currentUser
+    ) {
+        storageService.uploadAssetImage(id, file, currentUser);
+        return ResponseEntity.ok(ApiResponse.ok("Image uploaded.", assetService.getById(id)));
+    }
+}
