@@ -25,7 +25,7 @@ public record AssetResponse(
         LocalDate warrantyUntil,
         BigDecimal purchasePrice,
         Map<String, Object> specifications,
-        String imageUrl,
+        boolean hasImage,
         String qrCodePath,
         String notes,
         UserInfo createdBy,
@@ -37,7 +37,7 @@ public record AssetResponse(
     public record UserInfo(UUID id, String fullName, String email) {}
     public record DeptInfo(UUID id, String name) {}
 
-    public static AssetResponse from(Asset a, String imageUrl) {
+    public static AssetResponse from(Asset a) {
         return new AssetResponse(
                 a.getId(),
                 a.getName(),
@@ -53,7 +53,8 @@ public record AssetResponse(
                         : null,
                 a.getStatus(),
                 a.getOwner() != null
-                        ? new UserInfo(a.getOwner().getId(), a.getOwner().getFullName(), a.getOwner().getEmail()) : null,
+                        ? new UserInfo(a.getOwner().getId(), a.getOwner().getFullName(), a.getOwner().getEmail()) 
+                        : null,
                 a.getDepartment() != null
                         ? new DeptInfo(a.getDepartment().getId(), a.getDepartment().getName()) 
                         : null,
@@ -61,8 +62,8 @@ public record AssetResponse(
                 a.getWarrantyUntil(),
                 a.getPurchasePrice(),
                 a.getSpecifications(),
-                imageUrl,
-                "/public/assets/" + a.getId() + "/qr",
+                a.getImageUrl() != null,
+                "/pub/asset/" + a.getId() + "/qr",
                 a.getNotes(),
                 a.getCreatedBy() != null
                         ? new UserInfo(a.getCreatedBy().getId(), a.getCreatedBy().getFullName(), a.getCreatedBy().getEmail()) 
@@ -70,9 +71,5 @@ public record AssetResponse(
                 a.getCreatedAt(),
                 a.getUpdatedAt()
         );
-    }
-
-    public static AssetResponse from(Asset a) {
-        return from(a, a.getImageUrl());
     }
 }

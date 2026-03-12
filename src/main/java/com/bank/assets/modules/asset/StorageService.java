@@ -7,7 +7,6 @@ import com.bank.assets.modules.history.AssetHistory;
 import com.bank.assets.modules.history.AssetHistoryRepository;
 import com.bank.assets.modules.user.User;
 import io.minio.*;
-import io.minio.http.Method;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -28,8 +26,6 @@ public class StorageService {
 
     @Value("${app.minio.bucket-name}")
     private String bucket;
-
-    private static final int PRESIGNED_EXPIRY_SECONDS = 3600; //1h
 
     @PostConstruct
     public void ensureBucket() {
@@ -45,9 +41,9 @@ public class StorageService {
     }
 
     public void uploadAssetImage(UUID assetId, MultipartFile file, User uploadedBy) {
-        Asset asset = assetRepository.findById(assetId).orElseThrow(
-            () -> AppException.notFound(ErrorCode.ASSET_NOT_FOUND)
-        );
+        Asset asset = assetRepository
+            .findById(assetId)
+            .orElseThrow(() -> AppException.notFound(ErrorCode.ASSET_NOT_FOUND));
 
         String objectKey = objectKey(assetId);
         String contentType = file.getContentType() != null ? file.getContentType() : "image/jpeg";
@@ -74,30 +70,16 @@ public class StorageService {
             .build());
     }
 
-    public String generatePresignedUrl(String objectKey) {
-        if (objectKey == null) return null;
+    public byte[] getAssetImageBytes(UUID assetId) {
         try {
-            return minioClient.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder()
-                .method(Method.GET)
-                .bucket(bucket)
-                .object(objectKey)
-                .expiry(PRESIGNED_EXPIRY_SECONDS, TimeUnit.SECONDS)
-                .build());
-        } catch (Exception e) {
-            log.warn("presigned url generation failed for '{}': {}", objectKey, e.getMessage());
-            return null;
-        }
-    }
-
-    public boolean imageExists(UUID assetId) {
-        try {
-            minioClient.statObject(StatObjectArgs.builder()
+            return minioClient.getObject(GetObjectArgs.builder()
                 .bucket(bucket)
                 .object(objectKey(assetId))
-                .build());
-            return true;
+                .build()
+            ).readAllBytes();
         } catch (Exception e) {
-            return false;
+            log.warn("image fetch failed for asset {}: {}", assetId, e.getMessage());
+            return null;
         }
     }
 
