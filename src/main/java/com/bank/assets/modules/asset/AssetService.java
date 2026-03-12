@@ -27,7 +27,6 @@ public class AssetService {
     private final AssetCategoryRepository categoryRepository;
     private final AssetTypeRepository typeRepository;
     private final AssetHistoryRepository historyRepository;
-    private final StorageService storageService;
 
     @Transactional
     public AssetResponse create(CreateAssetRequest req, User createdBy) {
@@ -127,8 +126,7 @@ public class AssetService {
     }
 
     public AssetResponse buildResponse(Asset asset) {
-        String imageUrl = storageService.generatePresignedUrl(asset.getImageUrl());
-        return AssetResponse.from(asset, imageUrl);
+        return AssetResponse.from(asset);
     }
 
     public Asset findOrThrow(UUID id) {

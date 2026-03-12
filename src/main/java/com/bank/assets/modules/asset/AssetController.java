@@ -4,6 +4,7 @@ import com.bank.assets.common.enums.AssetStatus;
 import com.bank.assets.common.response.ApiResponse;
 import com.bank.assets.common.response.PageResponse;
 import com.bank.assets.modules.asset.dto.AssetResponse;
+import com.bank.assets.modules.asset.Asset;
 import com.bank.assets.modules.asset.dto.CreateAssetRequest;
 import com.bank.assets.modules.asset.dto.UpdateAssetRequest;
 import com.bank.assets.modules.user.User;
@@ -88,6 +89,19 @@ public class AssetController {
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         assetService.delete(id);
         return ResponseEntity.ok(ApiResponse.ok("Asset deleted."));
+    }
+
+    @GetMapping(value = "/{id}/image", produces = MediaType.IMAGE_JPEG_VALUE)
+    public ResponseEntity<byte[]> getImage(@PathVariable UUID id) {
+        Asset asset = assetService.findOrThrow(id);
+        if (asset.getImageUrl() == null) {
+            return ResponseEntity.notFound().build();
+        }
+        byte[] bytes = storageService.getAssetImageBytes(id);
+        if (bytes == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(bytes);
     }
 
     @PostMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
