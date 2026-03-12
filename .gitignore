@@ -10,6 +10,11 @@
 .springBeans
 .sts4-cache
 
+docker-compose.yml
+
+#vscode
+.vscode
+
 ### IntelliJ IDEA ###
 .idea
 *.iws

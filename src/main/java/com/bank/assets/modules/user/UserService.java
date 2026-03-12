@@ -1,0 +1,117 @@
+package com.bank.assets.modules.user;
+
+import com.bank.assets.common.enums.UserRole;
+import com.bank.assets.common.enums.UserStatus;
+import com.bank.assets.common.exception.AppException;
+import com.bank.assets.common.exception.ErrorCode;
+import com.bank.assets.modules.branch.Branch;
+import com.bank.assets.modules.branch.BranchRepository;
+import com.bank.assets.modules.branch.Department;
+import com.bank.assets.modules.branch.DepartmentRepository;
+import com.bank.assets.modules.user.dto.AssignDepartmentRequest;
+import com.bank.assets.modules.user.dto.CreateUserRequest;
+import com.bank.assets.modules.user.dto.UpdateUserStatusRequest;
+import com.bank.assets.modules.user.dto.UserResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class UserService {
+    private final UserRepository userRepository;
+    private final DepartmentRepository departmentRepository;
+    private final BranchRepository branchRepository;
+
+    @Transactional
+    public UserResponse createUser(CreateUserRequest req) {
+        if (userRepository.existsByEmail(req.email())) {
+            throw AppException.conflict(ErrorCode.USER_ALREADY_EXISTS);
+        }
+        User user = User.builder()
+            .fullName(req.fullName())
+            .email(req.email())
+            .role(req.role())
+            .status(UserStatus.PENDING)
+            .build();
+        return UserResponse.from(userRepository.save(user));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<UserResponse> list(UserStatus status, UserRole role, Pageable pageable) {
+        if (status != null && role != null) {
+            return userRepository.findByStatusAndRole(status, role, pageable).map(UserResponse::from);
+        } else if (status != null) {
+            return userRepository.findByStatus(status, pageable).map(UserResponse::from);
+        } else if (role != null) {
+            return userRepository.findByRole(role, pageable).map(UserResponse::from);
+        }
+        return userRepository.findAll(pageable).map(UserResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse getById(UUID id) {
+        return UserResponse.from(findOrThrow(id));
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse getProfile(User currentUser) {
+        return UserResponse.from(findOrThrow(currentUser.getId()));
+    }
+
+    @Transactional
+    public UserResponse changeStatus(UUID targetId, UpdateUserStatusRequest req, User admin) {
+        if (targetId.equals(admin.getId())) {
+            throw AppException.badRequest(ErrorCode.FORBIDDEN);
+        }
+
+        User target = findOrThrow(targetId);
+        target.setStatus(req.newStatus());
+        return UserResponse.from(userRepository.save(target));
+    }
+
+    @Transactional
+    public UserResponse approveUser(UUID targetId, User admin) {
+        if (targetId.equals(admin.getId())) {
+            throw AppException.badRequest(ErrorCode.FORBIDDEN);
+        }
+        User target = findOrThrow(targetId);
+        target.setStatus(UserStatus.ACTIVE);
+        return UserResponse.from(userRepository.save(target));
+    }
+
+    @Transactional
+    public UserResponse assignDepartment(UUID userId, AssignDepartmentRequest req) {
+        User user = findOrThrow(userId);
+
+        if (req.departmentId() != null) {
+            Department dept = departmentRepository
+                .findById(req.departmentId())
+                .orElseThrow(() -> AppException.notFound(ErrorCode.DEPARTMENT_NOT_FOUND));
+            user.setDepartment(dept);
+            user.setBranch(dept.getBranch());
+        } else {
+            user.setDepartment(null);
+        }
+
+        if (req.branchId() != null && req.departmentId() == null) {
+            Branch branch = branchRepository
+                .findById(req.branchId())
+                .orElseThrow(() -> AppException.notFound(ErrorCode.BRANCH_NOT_FOUND));
+            user.setBranch(branch);
+        } else if (req.branchId() == null && req.departmentId() == null) {
+            user.setBranch(null);
+        }
+        return UserResponse.from(userRepository.save(user));
+    }
+
+    private User findOrThrow(UUID id) {
+        return userRepository
+            .findById(id)
+            .orElseThrow(() -> AppException.notFound(ErrorCode.USER_NOT_FOUND));
+    }
+}

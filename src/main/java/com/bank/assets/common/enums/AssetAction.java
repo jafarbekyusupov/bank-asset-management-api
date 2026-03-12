@@ -1,0 +1,16 @@
+package com.bank.assets.common.enums;
+
+public enum AssetAction {
+    CREATED,
+    ASSIGNED,
+    RETURNED,
+    STATUS_CHANGED,
+    UPDATED,
+    IMAGE_UPLOADED,
+    NOTE_ADDED,
+    ISSUE_REPORTED,
+    ACKNOWLEDGED,
+    ASSIGNMENT_REQUESTED,
+    ASSIGNMENT_APPROVED,
+    ASSIGNMENT_REJECTED
+}

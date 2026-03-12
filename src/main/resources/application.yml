@@ -1,0 +1,133 @@
+# global
+spring:
+  application:
+    name: bank-asset-management
+  profiles:
+    active: local 
+  
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: UTC
+
+server:
+  port: 8081
+  servlet:
+    context-path: /api/v1
+  error:
+    include-message: always
+    include-binding-errors: always
+
+---
+# local
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  datasource:
+    url: jdbc:postgresql://localhost:5435/bank_assets
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update 
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+  mail:
+    host: localhost
+    port: 1025 
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+app:
+  jwt:
+    secret: local-dev-secret-key-160-bits-is-not-secure-enough
+    expiration-ms: 86400000
+    refresh-expiration-ms: 604800000
+  email:
+    from: ${MAIL_FROM:noreply@bank-assets.com}
+    base-url: ${APP_BASE_URL:http://localhost:8081}
+    verification-token-expiry-hours: 24
+  minio:
+    endpoint: http://localhost:9000
+    access-key: minioadmin
+    secret-key: minioadmin
+    bucket-name: bank-assets
+  qr:
+    base-url: http://localhost:3000
+    size: 300
+
+logging:
+  level:
+    com.bank.assets: DEBUG
+
+---
+#prod
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate 
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: 86400000
+  email:
+    from: ${MAIL_FROM}
+    base-url: ${APP_BASE_URL}
+    verification-token-expiry-hours: 24
+  minio:
+    endpoint: ${MINIO_ENDPOINT}
+    access-key: ${MINIO_ACCESS_KEY}
+    secret-key: ${MINIO_SECRET_KEY}
+    bucket-name: ${MINIO_BUCKET}
+
+logging:
+  level:
+    com.bank.assets: INFO
