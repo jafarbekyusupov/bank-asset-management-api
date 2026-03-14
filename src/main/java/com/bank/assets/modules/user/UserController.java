@@ -6,6 +6,8 @@ import com.bank.assets.common.response.ApiResponse;
 import com.bank.assets.common.response.PageResponse;
 import com.bank.assets.modules.user.dto.AssignDepartmentRequest;
 import com.bank.assets.modules.user.dto.CreateUserRequest;
+import com.bank.assets.modules.user.dto.UpdateRoleRequest;
+import com.bank.assets.modules.user.dto.UpdateUserRequest;
 import com.bank.assets.modules.user.dto.UpdateUserStatusRequest;
 import com.bank.assets.modules.user.dto.UserResponse;
 
@@ -84,5 +86,35 @@ public class UserController {
         @RequestBody AssignDepartmentRequest req
     ) {
         return ResponseEntity.ok(ApiResponse.ok("User department updated.", userService.assignDepartment(id, req)));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponse>> updateUser(
+        @PathVariable UUID id,
+        @Valid @RequestBody UpdateUserRequest req,
+        @AuthenticationPrincipal User currentUser
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok("User updated.", userService.updateUser(id, req, currentUser)));
+    }
+
+    @PatchMapping("/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponse>> updateRole(
+        @PathVariable UUID id,
+        @Valid @RequestBody UpdateRoleRequest req,
+        @AuthenticationPrincipal User currentUser
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok("User role updated.", userService.updateRole(id, req, currentUser)));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+        @PathVariable UUID id,
+        @AuthenticationPrincipal User currentUser
+    ) {
+        userService.deleteUser(id, currentUser);
+        return ResponseEntity.ok(ApiResponse.ok("User deleted."));
     }
 }

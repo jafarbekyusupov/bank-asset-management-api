@@ -13,6 +13,7 @@ public record UserResponse(
         String email,
         UserRole role,
         UserStatus status,
+        boolean isDev,
         DeptInfo department,
         BranchInfo branch,
         Instant createdAt,
@@ -28,11 +29,12 @@ public record UserResponse(
                 u.getEmail(),
                 u.getRole(),
                 u.getStatus(),
+                u.isDev(),
                 u.getDepartment() != null
-                        ? new DeptInfo(u.getDepartment().getId(), u.getDepartment().getName()) 
+                        ? new DeptInfo(u.getDepartment().getId(), u.getDepartment().getName())
                         : null,
                 u.getBranch() != null
-                        ? new BranchInfo(u.getBranch().getId(), u.getBranch().getName()) 
+                        ? new BranchInfo(u.getBranch().getId(), u.getBranch().getName())
                         : null,
                 u.getCreatedAt(),
                 u.getUpdatedAt()

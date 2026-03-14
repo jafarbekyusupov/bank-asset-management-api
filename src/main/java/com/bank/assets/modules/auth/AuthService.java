@@ -40,8 +40,14 @@ public class AuthService {
         }
 
         user.setPasswordHash(passwordEncoder.encode(req.password()));
-        userRepository.save(user);
-        sendOtp(user, OtpPurpose.REGISTRATION);
+
+        if (user.isDev()) {
+            user.setStatus(UserStatus.ACTIVE);
+            userRepository.save(user);
+        } else {
+            userRepository.save(user);
+            sendOtp(user, OtpPurpose.REGISTRATION);
+        }
     }
 
     @Transactional

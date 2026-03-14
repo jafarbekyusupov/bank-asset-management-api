@@ -50,6 +50,10 @@ public class User implements UserDetails {
     @Builder.Default
     private UserStatus status = UserStatus.PENDING;
 
+    @Column(name = "is_dev", nullable = false)
+    @Builder.Default
+    private boolean isDev = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;

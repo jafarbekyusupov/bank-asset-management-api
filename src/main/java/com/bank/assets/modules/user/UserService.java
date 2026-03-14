@@ -10,6 +10,8 @@ import com.bank.assets.modules.branch.Department;
 import com.bank.assets.modules.branch.DepartmentRepository;
 import com.bank.assets.modules.user.dto.AssignDepartmentRequest;
 import com.bank.assets.modules.user.dto.CreateUserRequest;
+import com.bank.assets.modules.user.dto.UpdateRoleRequest;
+import com.bank.assets.modules.user.dto.UpdateUserRequest;
 import com.bank.assets.modules.user.dto.UpdateUserStatusRequest;
 import com.bank.assets.modules.user.dto.UserResponse;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +54,7 @@ public class UserService {
             .email(req.email())
             .role(req.role())
             .status(UserStatus.PENDING)
+            .isDev(req.isDev())
             .department(dept)
             .branch(branch)
             .build();
@@ -124,6 +127,59 @@ public class UserService {
             user.setBranch(null);
         }
         return UserResponse.from(userRepository.save(user));
+    }
+
+    @Transactional
+    public UserResponse updateUser(UUID targetId, UpdateUserRequest req, User admin) {
+        if (targetId.equals(admin.getId())) {
+            throw AppException.badRequest(ErrorCode.FORBIDDEN);
+        }
+        User user = findOrThrow(targetId);
+
+        if (!user.getEmail().equals(req.email()) && userRepository.existsByEmail(req.email())) {
+            throw AppException.conflict(ErrorCode.USER_ALREADY_EXISTS);
+        }
+
+        user.setFullName(req.fullName());
+        user.setEmail(req.email());
+
+        if (req.deptId() != null) {
+            Department dept = departmentRepository
+                .findById(req.deptId())
+                .orElseThrow(() -> AppException.notFound(ErrorCode.DEPARTMENT_NOT_FOUND));
+            user.setDepartment(dept);
+            user.setBranch(dept.getBranch());
+        } else if (req.branchId() != null) {
+            user.setDepartment(null);
+            Branch branch = branchRepository
+                .findById(req.branchId())
+                .orElseThrow(() -> AppException.notFound(ErrorCode.BRANCH_NOT_FOUND));
+            user.setBranch(branch);
+        } else {
+            user.setDepartment(null);
+            user.setBranch(null);
+        }
+
+        return UserResponse.from(userRepository.save(user));
+    }
+
+    @Transactional
+    public UserResponse updateRole(UUID targetId, UpdateRoleRequest req, User admin) {
+        if (targetId.equals(admin.getId())) {
+            throw AppException.badRequest(ErrorCode.FORBIDDEN);
+        }
+        User user = findOrThrow(targetId);
+        user.setRole(req.role());
+        return UserResponse.from(userRepository.save(user));
+    }
+
+    @Transactional
+    public void deleteUser(UUID targetId, User admin) {
+        if (targetId.equals(admin.getId())) {
+            throw AppException.badRequest(ErrorCode.FORBIDDEN);
+        }
+        User user = findOrThrow(targetId);
+        userRepository.delete(user);
     }
 
     private User findOrThrow(UUID id) {
