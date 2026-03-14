@@ -5,6 +5,7 @@ import com.bank.assets.common.enums.UserStatus;
 import com.bank.assets.modules.asset.Asset;
 import com.bank.assets.modules.asset.AssetRepository;
 import com.bank.assets.modules.asset.AssetService;
+import com.bank.assets.modules.asset.AssetTypeRepository;
 import com.bank.assets.modules.asset.dto.AssetResponse;
 import com.bank.assets.modules.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AnalyticsService {
     private final AssetRepository assetRepository;
+    private final AssetTypeRepository typeRepository;
     private final AssetService assetService;
     private final UserRepository userRepository;
 
@@ -40,8 +42,27 @@ public class AnalyticsService {
 
         long totalAssets = byStatus.values().stream().mapToLong(Long::longValue).sum();
 
-        List<OverviewResponse.CategoryStat> byCategory = assetRepository.countGroupedByCategory().stream()
-                .map(c -> new OverviewResponse.CategoryStat(c.getCategoryName(), c.getCount()))
+        Map<String, Long> typesPerCategory = typeRepository.countTypesByCategory().stream()
+                .collect(Collectors.toMap(
+                        AssetTypeRepository.TypeCountByCategory::getCategoryName,
+                        AssetTypeRepository.TypeCountByCategory::getCount
+                ));
+
+        List<OverviewResponse.CategoryStat> byCategory = assetRepository.countGroupedByCategoryAndStatus()
+                .stream()
+                .collect(Collectors.groupingBy(AssetRepository.CategoryStatusCount::getCategoryName))
+                .entrySet().stream()
+                .map(e -> {
+                    String name = e.getKey();
+                    String desc = e.getValue().get(0).getDescription();
+                    long total = e.getValue().stream().mapToLong(AssetRepository.CategoryStatusCount::getCount).sum();
+                    long typeCount = typesPerCategory.getOrDefault(name, 0L);
+                    Map<String, Long> statusMap = e.getValue().stream().collect(Collectors.toMap(
+                            c -> c.getStatus().name(),
+                            AssetRepository.CategoryStatusCount::getCount
+                    ));
+                    return new OverviewResponse.CategoryStat(name, desc, total, typeCount, statusMap);
+                })
                 .toList();
 
         List<OverviewResponse.DeptStat> byDept = assetRepository.countGroupedByDepartment().stream()

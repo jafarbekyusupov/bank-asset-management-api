@@ -58,6 +58,17 @@ public interface AssetRepository extends JpaRepository<Asset, UUID>, JpaSpecific
         long getCount();
     }
 
+    @Query("SELECT c.name as categoryName, c.description as description, a.status as status, COUNT(a) as count " +
+           "FROM Asset a JOIN a.category c GROUP BY c.name, c.description, a.status")
+    List<CategoryStatusCount> countGroupedByCategoryAndStatus();
+
+    interface CategoryStatusCount {
+        String getCategoryName();
+        String getDescription();
+        AssetStatus getStatus();
+        long getCount();
+    }
+
     interface DeptCount {
         String getDeptName();
         long getCount();

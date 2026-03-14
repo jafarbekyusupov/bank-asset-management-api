@@ -40,6 +40,8 @@ public class AssignmentRequestService {
             throw AppException.badRequest(ErrorCode.INVALID_STATUS_TRANSITION);
         }
 
+        validateAssetInScope(asset, requestedBy);
+
         if (assignmentRepository.existsByAssetIdAndReturnedAtIsNull(req.assetId())) {
             throw AppException.conflict(ErrorCode.ASSET_ALREADY_ASSIGNED);
         }
@@ -61,6 +63,8 @@ public class AssignmentRequestService {
             .asset(asset)
             .action(AssetAction.ASSIGNMENT_REQUESTED)
             .toUser(requestedBy)
+            .toDept(requestedBy.getDepartment())
+            .toBranch(requestedBy.getBranch())
             .changedBy(requestedBy)
             .reason(req.reason())
             .build());
@@ -76,8 +80,9 @@ public class AssignmentRequestService {
 
     @Transactional(readOnly = true)
     public Page<AssignmentRequestResponse> listMyRequests(User currentUser, Pageable pageable) {
-        return requestRepository.findByRequestedById(currentUser.getId(), pageable)
-                .map(AssignmentRequestResponse::from);
+        return requestRepository
+            .findByRequestedById(currentUser.getId(), pageable)
+            .map(AssignmentRequestResponse::from);
     }
 
     @Transactional
@@ -125,6 +130,8 @@ public class AssignmentRequestService {
             .oldStatus(prevStatus)
             .newStatus(AssetStatus.ASSIGNED)
             .toUser(assignedToUser)
+            .toDept(assignedToUser.getDepartment())
+            .toBranch(assignedToUser.getBranch())
             .changedBy(admin)
             .build());
         return AssignmentRequestResponse.from(request);
@@ -144,14 +151,39 @@ public class AssignmentRequestService {
         request.setReviewedAt(Instant.now());
         request = requestRepository.save(request);
 
+        User rejectedUser = request.getRequestedBy();
         historyRepository.save(AssetHistory.builder()
             .asset(request.getAsset())
             .action(AssetAction.ASSIGNMENT_REJECTED)
-            .toUser(request.getRequestedBy())
+            .toUser(rejectedUser)
+            .toDept(rejectedUser.getDepartment())
+            .toBranch(rejectedUser.getBranch())
             .changedBy(admin)
             .reason(req != null ? req.adminNote() : null)
             .build());
         return AssignmentRequestResponse.from(request);
+    }
+
+    private void validateAssetInScope(Asset asset, User user) {
+        switch (user.getRole()) {
+            case STAFF -> {
+                if (user.getDepartment() == null
+                    || asset.getDepartment() == null
+                    || !asset.getDepartment().getId().equals(user.getDepartment().getId())
+                ) {
+                    throw AppException.badRequest(ErrorCode.FORBIDDEN);
+                }
+            }
+            case DEPT_MANAGER -> {
+                if (user.getBranch() == null) throw AppException.badRequest(ErrorCode.FORBIDDEN);
+                boolean viaDept = asset.getDepartment() != null
+                    && asset.getDepartment().getBranch().getId().equals(user.getBranch().getId());
+                boolean viaBranch = asset.getBranch() != null
+                    && asset.getBranch().getId().equals(user.getBranch().getId());
+                if (!viaDept && !viaBranch) throw AppException.badRequest(ErrorCode.FORBIDDEN);
+            }
+            default -> {} // branch_mngr and admin - no scope restrictions
+        }
     }
 
     private AssignmentRequest findOrThrow(UUID id) {

@@ -3,6 +3,8 @@ package com.bank.assets.modules.history;
 import com.bank.assets.common.enums.AssetAction;
 import com.bank.assets.common.enums.AssetStatus;
 import com.bank.assets.modules.asset.Asset;
+import com.bank.assets.modules.branch.Branch;
+import com.bank.assets.modules.branch.Department;
 import com.bank.assets.modules.user.User;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
@@ -50,6 +52,22 @@ public class AssetHistory {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "to_user_id")
     private User toUser;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "from_dept_id")
+    private Department fromDept;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "to_dept_id")
+    private Department toDept;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "from_branch_id")
+    private Branch fromBranch;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "to_branch_id")
+    private Branch toBranch;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "changed_by", nullable = false)

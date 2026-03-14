@@ -17,4 +17,12 @@ public interface AssetTypeRepository extends JpaRepository<AssetType, UUID> {
 
     @Query("SELECT t FROM AssetType t JOIN FETCH t.category WHERE t.category.id = :categoryId ORDER BY t.name")
     List<AssetType> findByCategoryIdWithCategory(@Param("categoryId") UUID categoryId);
+
+    @Query("SELECT t.category.name as categoryName, COUNT(t) as count FROM AssetType t GROUP BY t.category.name")
+    List<TypeCountByCategory> countTypesByCategory();
+
+    interface TypeCountByCategory {
+        String getCategoryName();
+        long getCount();
+    }
 }

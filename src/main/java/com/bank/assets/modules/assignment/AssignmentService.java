@@ -2,6 +2,7 @@ package com.bank.assets.modules.assignment;
 
 import com.bank.assets.common.enums.AssetAction;
 import com.bank.assets.common.enums.AssetStatus;
+import com.bank.assets.common.enums.UserRole;
 import com.bank.assets.common.exception.AppException;
 import com.bank.assets.common.exception.ErrorCode;
 import com.bank.assets.modules.asset.Asset;
@@ -12,6 +13,8 @@ import com.bank.assets.modules.assignment.dto.AssignAssetRequest;
 import com.bank.assets.modules.assignment.dto.AssignmentResponse;
 import com.bank.assets.modules.assignment.dto.ChangeStatusRequest;
 import com.bank.assets.modules.assignment.dto.ReturnAssetRequest;
+import com.bank.assets.modules.branch.Branch;
+import com.bank.assets.modules.branch.BranchRepository;
 import com.bank.assets.modules.branch.Department;
 import com.bank.assets.modules.branch.DepartmentRepository;
 import com.bank.assets.modules.history.AssetHistory;
@@ -35,10 +38,18 @@ public class AssignmentService {
     private final AssetHistoryRepository historyRepository;
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
+    private final BranchRepository branchRepository;
 
     @Transactional
     public AssignmentResponse assign(UUID assetId, AssignAssetRequest req, User assignedBy) {
-        if (req.assignedToUserId() == null && req.assignedToDeptId() == null) {
+        boolean hasUser = req.assignedToUserId() != null;
+        boolean hasDept = req.assignedToDeptId() != null;
+        boolean hasBranch = req.assignedToBranchId() != null;
+
+        if (!hasUser && !hasDept && !hasBranch) {
+            throw AppException.badRequest(ErrorCode.VALIDATION_ERROR);
+        }
+        if (hasBranch && (hasUser || hasDept)) {
             throw AppException.badRequest(ErrorCode.VALIDATION_ERROR);
         }
 
@@ -53,17 +64,32 @@ public class AssignmentService {
         }
 
         User targetUser = null;
-        if (req.assignedToUserId() != null) {
+        if (hasUser) {
             targetUser = userRepository
                 .findById(req.assignedToUserId())
                 .orElseThrow(() -> AppException.notFound(ErrorCode.USER_NOT_FOUND));
         }
 
         Department targetDept = null;
-        if (req.assignedToDeptId() != null) {
+        if (hasDept) {
             targetDept = departmentRepository
                 .findById(req.assignedToDeptId())
                 .orElseThrow(() -> AppException.notFound(ErrorCode.DEPARTMENT_NOT_FOUND));
+        }
+
+        if (targetUser != null && targetDept != null) {
+            if (targetUser.getDepartment() == null
+                || !targetUser.getDepartment().getId().equals(targetDept.getId())
+            ) {
+                throw AppException.badRequest(ErrorCode.VALIDATION_ERROR);
+            }
+        }
+
+        Branch targetBranch = null;
+        if (hasBranch) {
+            targetBranch = branchRepository
+                .findById(req.assignedToBranchId())
+                .orElseThrow(() -> AppException.notFound(ErrorCode.BRANCH_NOT_FOUND));
         }
 
         AssetStatus prevStatus = asset.getStatus();
@@ -72,6 +98,7 @@ public class AssignmentService {
             .asset(asset)
             .assignedToUser(targetUser)
             .assignedToDept(targetDept)
+            .assignedToBranch(targetBranch)
             .assignedBy(assignedBy)
             .notes(req.notes())
             .build();
@@ -80,7 +107,15 @@ public class AssignmentService {
         asset.setStatus(AssetStatus.ASSIGNED);
         asset.setOwner(targetUser);
         asset.setDepartment(targetDept);
+        asset.setBranch(targetBranch);
         assetRepository.save(asset);
+
+        Branch assignedToBranch = null;
+        if (targetBranch != null) {
+            assignedToBranch = targetBranch;
+        } else if (targetDept != null) {
+            assignedToBranch = targetDept.getBranch();
+        }
 
         historyRepository.save(AssetHistory.builder()
             .asset(asset)
@@ -88,6 +123,8 @@ public class AssignmentService {
             .oldStatus(prevStatus)
             .newStatus(AssetStatus.ASSIGNED)
             .toUser(targetUser)
+            .toDept(targetDept)
+            .toBranch(assignedToBranch)
             .changedBy(assignedBy)
             .build());
         return AssignmentResponse.from(assignment);
@@ -101,6 +138,14 @@ public class AssignmentService {
             .findByAssetIdAndReturnedAtIsNull(assetId)
             .orElseThrow(() -> AppException.badRequest(ErrorCode.ASSET_NOT_ASSIGNED));
 
+        if (returnedBy.getRole() == UserRole.STAFF) {
+            if (assignment.getAssignedToUser() == null
+                || !assignment.getAssignedToUser().getId().equals(returnedBy.getId())
+            ) {
+                throw AppException.badRequest(ErrorCode.FORBIDDEN);
+            }
+        }
+
         AssetStatus prevStatus = asset.getStatus();
         User prevOwner = assignment.getAssignedToUser();
 
@@ -111,7 +156,15 @@ public class AssignmentService {
         asset.setStatus(AssetStatus.REGISTERED);
         asset.setOwner(null);
         asset.setDepartment(null);
+        asset.setBranch(null);
         assetRepository.save(asset);
+
+        Branch returnedFromBranch = null;
+        if (assignment.getAssignedToBranch() != null) {
+            returnedFromBranch = assignment.getAssignedToBranch();
+        } else if (assignment.getAssignedToDept() != null) {
+            returnedFromBranch = assignment.getAssignedToDept().getBranch();
+        }
 
         historyRepository.save(AssetHistory.builder()
             .asset(asset)
@@ -119,6 +172,8 @@ public class AssignmentService {
             .oldStatus(prevStatus)
             .newStatus(AssetStatus.REGISTERED)
             .fromUser(prevOwner)
+            .fromDept(assignment.getAssignedToDept())
+            .fromBranch(returnedFromBranch)
             .changedBy(returnedBy)
             .reason(req.returnNotes())
             .build());
@@ -148,6 +203,7 @@ public class AssignmentService {
             });
             asset.setOwner(null);
             asset.setDepartment(null);
+            asset.setBranch(null);
         }
 
         asset.setStatus(target);

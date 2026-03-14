@@ -35,6 +35,14 @@ public class CatalogController {
         );
     }
 
+    @GetMapping("/category/{id}")
+    public ApiResponse<CategoryResponse> getCategoryById(@PathVariable UUID id) {
+        AssetCategory category = categoryRepo
+                .findById(id)
+                .orElseThrow(() -> AppException.notFound(ErrorCode.CATEGORY_NOT_FOUND));
+        return ApiResponse.ok(new CategoryResponse(category.getId(), category.getName(), category.getDescription()));
+    }
+
     @PostMapping("/category")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<CategoryResponse> createCategory(@Valid @RequestBody CreateCategoryRequest req) {
@@ -49,7 +57,16 @@ public class CatalogController {
         );
         return ApiResponse.ok(new CategoryResponse(saved.getId(), saved.getName(), saved.getDescription()));
     }
-    
+
+    @GetMapping("/type/{id}")
+    public ApiResponse<AssetTypeResponse> getTypeById(@PathVariable UUID id) {
+        AssetType t = typeRepo
+                .findById(id)
+                .orElseThrow(() -> AppException.notFound(ErrorCode.TYPE_NOT_FOUND));
+        return ApiResponse.ok(new AssetTypeResponse(t.getId(), t.getName(), t.getDescription(),
+                t.getCategory().getId(), t.getCategory().getName()));
+    }
+
     @GetMapping("/type/list")
     public ApiResponse<List<AssetTypeResponse>> listTypes(
         @RequestParam(required = false) UUID categoryId) {

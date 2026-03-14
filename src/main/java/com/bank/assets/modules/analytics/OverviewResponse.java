@@ -17,7 +17,10 @@ public record OverviewResponse(
 
     public record CategoryStat(
         String category,
-        long count
+        String description,
+        long total,
+        long typeCount,
+        Map<String, Long> byStatus
     ) {}
 
     public record DeptStat(

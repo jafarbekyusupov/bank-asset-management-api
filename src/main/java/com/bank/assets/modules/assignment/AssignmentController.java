@@ -1,23 +1,17 @@
 package com.bank.assets.modules.assignment;
 
 import com.bank.assets.common.response.ApiResponse;
-import com.bank.assets.common.response.PageResponse;
 import com.bank.assets.modules.asset.dto.AssetResponse;
 import com.bank.assets.modules.assignment.dto.AssignAssetRequest;
 import com.bank.assets.modules.assignment.dto.AssignmentResponse;
 import com.bank.assets.modules.assignment.dto.ChangeStatusRequest;
 import com.bank.assets.modules.assignment.dto.ReportIssueRequest;
 import com.bank.assets.modules.assignment.dto.ReturnAssetRequest;
-import com.bank.assets.modules.history.AssetHistoryRepository;
-import com.bank.assets.modules.history.AssetHistoryResponse;
 import com.bank.assets.modules.user.User;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -31,7 +25,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AssignmentController {
     private final AssignmentService assignmentService;
-    private final AssetHistoryRepository historyRepository;
 
     @PostMapping("/{id}/assign")
     @PreAuthorize("hasRole('ADMIN')")
@@ -45,7 +38,6 @@ public class AssignmentController {
     }
 
     @PostMapping("/{id}/return")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<AssetResponse>> returnAsset(
         @PathVariable UUID id,
         @RequestBody ReturnAssetRequest req,
@@ -89,16 +81,4 @@ public class AssignmentController {
         return ResponseEntity.ok(ApiResponse.ok("Assignment acknowledged.", assignmentService.acknowledge(id, currentUser)));
     }
 
-    @GetMapping("/{id}/history")
-    public ResponseEntity<ApiResponse<PageResponse<AssetHistoryResponse>>> getHistory(
-        @PathVariable UUID id,
-        @PageableDefault(size = 20, sort = "changedAt", direction = Sort.Direction.DESC) Pageable pageable
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(
-            PageResponse.from(historyRepository
-                .findByAssetIdOrderByChangedAtDesc(id, pageable)
-                .map(AssetHistoryResponse::from))
-        ));
-    }
 }
-
