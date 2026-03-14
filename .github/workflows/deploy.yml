@@ -17,7 +17,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script_stop: true
           script: |
-            cd /opt/apps
-            git -C navlin-backend pull origin master
-            docker compose up -d --build navlin-backend
+            cd /opt/apps/navlin-backend
+            git pull origin master
+            docker compose build --no-cache navlin-backend
+            docker compose up -d --force-recreate navlin-backend
             docker image prune -f
