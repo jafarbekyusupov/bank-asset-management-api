@@ -1,6 +1,7 @@
 package com.bank.assets.modules.asset;
 
 import com.bank.assets.common.enums.AssetStatus;
+import com.bank.assets.modules.branch.Branch;
 import com.bank.assets.modules.branch.Department;
 import com.bank.assets.modules.user.User;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -65,6 +66,10 @@ public class Asset {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dept_id")
     private Department department;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "branch_id")
+    private Branch branch;
 
     @Column(name = "purchase_date")
     private LocalDate purchaseDate;

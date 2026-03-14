@@ -32,11 +32,28 @@ public class UserService {
         if (userRepository.existsByEmail(req.email())) {
             throw AppException.conflict(ErrorCode.USER_ALREADY_EXISTS);
         }
+
+        Department dept = null;
+        Branch branch = null;
+
+        if (req.deptId() != null) {
+            dept = departmentRepository
+                .findById(req.deptId())
+                .orElseThrow(() -> AppException.notFound(ErrorCode.DEPARTMENT_NOT_FOUND));
+            branch = dept.getBranch();
+        } else if (req.branchId() != null) {
+            branch = branchRepository
+                .findById(req.branchId())
+                .orElseThrow(() -> AppException.notFound(ErrorCode.BRANCH_NOT_FOUND));
+        }
+
         User user = User.builder()
             .fullName(req.fullName())
             .email(req.email())
             .role(req.role())
             .status(UserStatus.PENDING)
+            .department(dept)
+            .branch(branch)
             .build();
         return UserResponse.from(userRepository.save(user));
     }

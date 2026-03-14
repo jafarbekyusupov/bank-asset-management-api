@@ -1,6 +1,8 @@
 package com.bank.assets.modules.asset;
 
 import com.bank.assets.common.enums.AssetStatus;
+import com.bank.assets.modules.user.User;
+import jakarta.persistence.criteria.JoinType;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.UUID;
@@ -23,6 +25,21 @@ public class AssetSpecification {
             .and(hasOwner(ownerId))
             .and(hasDept(deptId))
             .and(matchesSearch(search));
+    }
+
+    public static Specification<Asset> scopedFor(User user) {
+        return switch (user.getRole()) {
+            case ADMIN, BRANCH_MANAGER -> null;
+            case DEPT_MANAGER -> {
+                if (user.getBranch() == null) yield (root, q, cb) -> cb.disjunction();
+                UUID branchId = user.getBranch().getId();
+                yield (root, q, cb) -> cb.or(
+                    cb.equal(root.join("department", JoinType.LEFT).get("branch").get("id"), branchId),
+                    cb.equal(root.join("branch", JoinType.LEFT).get("id"), branchId)
+                );
+            }
+            case STAFF -> (root, q, cb) -> cb.equal(root.get("owner").get("id"), user.getId());
+        };
     }
 
     private static Specification<Asset> hasStatus(AssetStatus status) {

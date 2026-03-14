@@ -71,15 +71,17 @@ public class AssetService {
 
     @Transactional(readOnly = true)
     public Page<AssetResponse> list(
-        AssetStatus status, 
-        UUID categoryId, 
+        AssetStatus status,
+        UUID categoryId,
         UUID typeId,
-        UUID ownerId, 
-        UUID deptId, 
-        String search, 
+        UUID ownerId,
+        UUID deptId,
+        String search,
+        User currentUser,
         Pageable pageable
     ) {
-        Specification<Asset> spec = AssetSpecification.withFilters(status, categoryId, typeId, ownerId, deptId, search);
+        Specification<Asset> spec = AssetSpecification.withFilters(status, categoryId, typeId, ownerId, deptId, search)
+                .and(AssetSpecification.scopedFor(currentUser));
         return assetRepository.findAll(spec, pageable).map(this::buildResponse);
     }
 

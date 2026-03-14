@@ -1,10 +1,10 @@
 package com.bank.assets.modules.asset;
 
 import com.bank.assets.common.enums.AssetStatus;
+import com.bank.assets.common.enums.UserRole;
 import com.bank.assets.common.response.ApiResponse;
 import com.bank.assets.common.response.PageResponse;
 import com.bank.assets.modules.asset.dto.AssetResponse;
-import com.bank.assets.modules.asset.Asset;
 import com.bank.assets.modules.asset.dto.CreateAssetRequest;
 import com.bank.assets.modules.asset.dto.UpdateAssetRequest;
 import com.bank.assets.modules.user.User;
@@ -52,10 +52,11 @@ public class AssetController {
         @RequestParam(required = false) UUID ownerId,
         @RequestParam(required = false) UUID deptId,
         @RequestParam(required = false) String search,
+        @AuthenticationPrincipal User currentUser,
         @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ResponseEntity.ok(ApiResponse.ok(
-            PageResponse.from(assetService.list(status, categoryId, typeId, ownerId, deptId, search, pageable))
+            PageResponse.from(assetService.list(status, categoryId, typeId, ownerId, deptId, search, currentUser, pageable))
         ));
     }
 
@@ -64,8 +65,19 @@ public class AssetController {
         @AuthenticationPrincipal User currentUser,
         @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
+        UUID ownerId = currentUser.getRole() == UserRole.STAFF ? currentUser.getId() : null;
         return ResponseEntity.ok(ApiResponse.ok(
-            PageResponse.from(assetService.list(null, null, null, currentUser.getId(), null, null, pageable))
+            PageResponse.from(assetService.list(null, null, null, ownerId, null, null, currentUser, pageable))
+        ));
+    }
+
+    @GetMapping("/assignable")
+    public ResponseEntity<ApiResponse<PageResponse<AssetResponse>>> assignable(
+        @AuthenticationPrincipal User currentUser,
+        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(
+            PageResponse.from(assetService.list(AssetStatus.REGISTERED, null, null, null, null, null, currentUser, pageable))
         ));
     }
 

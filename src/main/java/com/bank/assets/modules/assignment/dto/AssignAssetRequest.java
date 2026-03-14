@@ -4,5 +4,6 @@ import java.util.UUID;
 public record AssignAssetRequest(
         UUID assignedToUserId,
         UUID assignedToDeptId,
+        UUID assignedToBranchId,
         String notes
 ) {}
