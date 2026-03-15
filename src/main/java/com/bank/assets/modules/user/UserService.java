@@ -4,6 +4,7 @@ import com.bank.assets.common.enums.UserRole;
 import com.bank.assets.common.enums.UserStatus;
 import com.bank.assets.common.exception.AppException;
 import com.bank.assets.common.exception.ErrorCode;
+import com.bank.assets.modules.asset.AssetRepository;
 import com.bank.assets.modules.branch.Branch;
 import com.bank.assets.modules.branch.BranchRepository;
 import com.bank.assets.modules.branch.Department;
@@ -28,6 +29,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
     private final BranchRepository branchRepository;
+    private final AssetRepository assetRepository;
 
     @Transactional
     public UserResponse createUser(CreateUserRequest req) {
@@ -62,20 +64,16 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public Page<UserResponse> list(UserStatus status, UserRole role, Pageable pageable) {
-        if (status != null && role != null) {
-            return userRepository.findByStatusAndRole(status, role, pageable).map(UserResponse::from);
-        } else if (status != null) {
-            return userRepository.findByStatus(status, pageable).map(UserResponse::from);
-        } else if (role != null) {
-            return userRepository.findByRole(role, pageable).map(UserResponse::from);
-        }
-        return userRepository.findAll(pageable).map(UserResponse::from);
+    public Page<UserResponse> list(UserStatus status, UserRole role, String search, Pageable pageable) {
+        return userRepository
+            .findAll(UserSpecification.withFilters(status, role, search), pageable)
+            .map(UserResponse::from);
     }
 
     @Transactional(readOnly = true)
     public UserResponse getById(UUID id) {
-        return UserResponse.from(findOrThrow(id));
+        User user = findOrThrow(id);
+        return UserResponse.from(user, !assetRepository.existsByOwnerId(id));
     }
 
     @Transactional(readOnly = true)
@@ -179,6 +177,9 @@ public class UserService {
             throw AppException.badRequest(ErrorCode.FORBIDDEN);
         }
         User user = findOrThrow(targetId);
+        if (assetRepository.existsByOwnerId(targetId)) {
+            throw AppException.conflict(ErrorCode.USER_HAS_ASSETS);
+        }
         userRepository.delete(user);
     }
 

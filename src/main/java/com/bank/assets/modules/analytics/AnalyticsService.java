@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,11 +35,9 @@ public class AnalyticsService {
         LocalDate today = LocalDate.now();
         LocalDate in30Days = today.plusDays(30);
 
-        Map<String, Long> byStatus = assetRepository.countGroupedByStatus().stream()
-                .collect(Collectors.toMap(
-                        s -> s.getStatus().name(),
-                        AssetRepository.StatusCount::getCount
-                ));
+        Map<String, Long> byStatus = emptyStatusMap();
+        assetRepository.countGroupedByStatus()
+                .forEach(s -> byStatus.put(s.getStatus().name(), s.getCount()));
 
         long totalAssets = byStatus.values().stream().mapToLong(Long::longValue).sum();
 
@@ -57,10 +56,8 @@ public class AnalyticsService {
                     String desc = e.getValue().get(0).getDescription();
                     long total = e.getValue().stream().mapToLong(AssetRepository.CategoryStatusCount::getCount).sum();
                     long typeCount = typesPerCategory.getOrDefault(name, 0L);
-                    Map<String, Long> statusMap = e.getValue().stream().collect(Collectors.toMap(
-                            c -> c.getStatus().name(),
-                            AssetRepository.CategoryStatusCount::getCount
-                    ));
+                    Map<String, Long> statusMap = emptyStatusMap();
+                    e.getValue().forEach(c -> statusMap.put(c.getStatus().name(), c.getCount()));
                     return new OverviewResponse.CategoryStat(name, desc, total, typeCount, statusMap);
                 })
                 .toList();
@@ -84,6 +81,11 @@ public class AnalyticsService {
                 new OverviewResponse.WarrantyAlerts(expired, expiringSoon),
                 new OverviewResponse.UserStats(totalUsers, activeUsers, pendingVerification, pendingApproval)
         );
+    }
+
+    private static Map<String, Long> emptyStatusMap() {
+        return Arrays.stream(AssetStatus.values())
+                .collect(Collectors.toMap(AssetStatus::name, s -> 0L));
     }
 
     @Transactional(readOnly = true)

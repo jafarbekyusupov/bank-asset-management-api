@@ -13,6 +13,11 @@ import java.util.UUID;
 
 public interface AssetRepository extends JpaRepository<Asset, UUID>, JpaSpecificationExecutor<Asset> {
     boolean existsBySerialNumber(String serialNumber);
+    boolean existsByBranchId(UUID branchId);
+    boolean existsByDepartmentId(UUID departmentId);
+    boolean existsByCategoryId(UUID categoryId);
+    boolean existsByTypeId(UUID typeId);
+    boolean existsByOwnerId(UUID ownerId);
 
     Optional<Asset> findBySerialNumber(String serialNumber);
 
@@ -49,13 +54,13 @@ public interface AssetRepository extends JpaRepository<Asset, UUID>, JpaSpecific
        @Param("excluded") List<AssetStatus> excluded);
 
     interface StatusCount {
-        AssetStatus getStatus();
-        long getCount();
+       AssetStatus getStatus();
+       long getCount();
     }
 
     interface CategoryCount {
-        String getCategoryName();
-        long getCount();
+       String getCategoryName();
+       long getCount();
     }
 
     @Query("SELECT c.name as categoryName, c.description as description, a.status as status, COUNT(a) as count " +
@@ -63,14 +68,14 @@ public interface AssetRepository extends JpaRepository<Asset, UUID>, JpaSpecific
     List<CategoryStatusCount> countGroupedByCategoryAndStatus();
 
     interface CategoryStatusCount {
-        String getCategoryName();
-        String getDescription();
-        AssetStatus getStatus();
-        long getCount();
+       String getCategoryName();
+       String getDescription();
+       AssetStatus getStatus();
+       long getCount();
     }
 
     interface DeptCount {
-        String getDeptName();
-        long getCount();
+       String getDeptName();
+       long getCount();
     }
 }

@@ -17,7 +17,8 @@ public record UserResponse(
         DeptInfo department,
         BranchInfo branch,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        Boolean canDelete
 ) {
     public record DeptInfo(UUID id, String name) {}
     public record BranchInfo(UUID id, String name) {}
@@ -37,7 +38,28 @@ public record UserResponse(
                         ? new BranchInfo(u.getBranch().getId(), u.getBranch().getName())
                         : null,
                 u.getCreatedAt(),
-                u.getUpdatedAt()
+                u.getUpdatedAt(),
+                null
+        );
+    }
+
+    public static UserResponse from(User u, boolean canDelete) {
+        return new UserResponse(
+                u.getId(),
+                u.getFullName(),
+                u.getEmail(),
+                u.getRole(),
+                u.getStatus(),
+                u.isDev(),
+                u.getDepartment() != null
+                        ? new DeptInfo(u.getDepartment().getId(), u.getDepartment().getName())
+                        : null,
+                u.getBranch() != null
+                        ? new BranchInfo(u.getBranch().getId(), u.getBranch().getName())
+                        : null,
+                u.getCreatedAt(),
+                u.getUpdatedAt(),
+                canDelete
         );
     }
 }
