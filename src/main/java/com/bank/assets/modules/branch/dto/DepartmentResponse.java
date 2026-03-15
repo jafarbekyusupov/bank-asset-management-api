@@ -10,7 +10,10 @@ public record DepartmentResponse(
     String name,
     UUID branchId,
     String branchName,
-    Instant createdAt
+    Instant createdAt,
+    boolean isActive,
+    Instant archivedAt,
+    Boolean canDelete
 ) {
     public static DepartmentResponse from(Department d) {
         return new DepartmentResponse(
@@ -18,7 +21,23 @@ public record DepartmentResponse(
             d.getName(),
             d.getBranch() != null ? d.getBranch().getId() : null,
             d.getBranch() != null ? d.getBranch().getName() : null,
-            d.getCreatedAt()
+            d.getCreatedAt(),
+            d.isActive(),
+            d.getArchivedAt(),
+            null
+        );
+    }
+
+    public static DepartmentResponse from(Department d, boolean canDelete) {
+        return new DepartmentResponse(
+            d.getId(),
+            d.getName(),
+            d.getBranch() != null ? d.getBranch().getId() : null,
+            d.getBranch() != null ? d.getBranch().getName() : null,
+            d.getCreatedAt(),
+            d.isActive(),
+            d.getArchivedAt(),
+            canDelete
         );
     }
 }

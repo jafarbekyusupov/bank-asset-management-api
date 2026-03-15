@@ -49,44 +49,34 @@ public class AssignmentService {
         if (!hasUser && !hasDept && !hasBranch) {
             throw AppException.badRequest(ErrorCode.VALIDATION_ERROR);
         }
-        if (hasBranch && (hasUser || hasDept)) {
-            throw AppException.badRequest(ErrorCode.VALIDATION_ERROR);
-        }
 
         Asset asset = assetService.findOrThrow(assetId);
 
-        if (!asset.getStatus().canBeAssigned()) {
+        if (asset.getStatus() == AssetStatus.ASSIGNED) {
+            // force reassign: autoclose current assignment
+            AssetAssignment current = assignmentRepository
+                .findByAssetIdAndReturnedAtIsNull(assetId)
+                .orElseThrow(() -> AppException.badRequest(ErrorCode.ASSET_NOT_ASSIGNED));
+            completeAssetReturnProcess(asset, current, "Auto-returned: reassigned by admin", assignedBy);
+        } else if (!asset.getStatus().canBeAssigned()) {
             throw AppException.badRequest(ErrorCode.INVALID_STATUS_TRANSITION);
         }
 
-        if (assignmentRepository.existsByAssetIdAndReturnedAtIsNull(assetId)) {
-            throw AppException.conflict(ErrorCode.ASSET_ALREADY_ASSIGNED);
-        }
-
         User targetUser = null;
+        Department targetDept = null;
+        Branch targetBranch = null;
         if (hasUser) {
             targetUser = userRepository
                 .findById(req.assignedToUserId())
                 .orElseThrow(() -> AppException.notFound(ErrorCode.USER_NOT_FOUND));
-        }
-
-        Department targetDept = null;
-        if (hasDept) {
+            targetDept = targetUser.getDepartment();
+            targetBranch = targetUser.getBranch();
+        } else if (hasDept) {
             targetDept = departmentRepository
                 .findById(req.assignedToDeptId())
                 .orElseThrow(() -> AppException.notFound(ErrorCode.DEPARTMENT_NOT_FOUND));
-        }
-
-        if (targetUser != null && targetDept != null) {
-            if (targetUser.getDepartment() == null
-                || !targetUser.getDepartment().getId().equals(targetDept.getId())
-            ) {
-                throw AppException.badRequest(ErrorCode.VALIDATION_ERROR);
-            }
-        }
-
-        Branch targetBranch = null;
-        if (hasBranch) {
+            targetBranch = targetDept.getBranch();
+        } else {
             targetBranch = branchRepository
                 .findById(req.assignedToBranchId())
                 .orElseThrow(() -> AppException.notFound(ErrorCode.BRANCH_NOT_FOUND));
@@ -100,6 +90,7 @@ public class AssignmentService {
             .assignedToDept(targetDept)
             .assignedToBranch(targetBranch)
             .assignedBy(assignedBy)
+            .assignedAt(Instant.now())
             .notes(req.notes())
             .build();
         assignment = assignmentRepository.save(assignment);
@@ -110,12 +101,7 @@ public class AssignmentService {
         asset.setBranch(targetBranch);
         assetRepository.save(asset);
 
-        Branch assignedToBranch = null;
-        if (targetBranch != null) {
-            assignedToBranch = targetBranch;
-        } else if (targetDept != null) {
-            assignedToBranch = targetDept.getBranch();
-        }
+        Branch assignedToBranch = targetBranch;
 
         historyRepository.save(AssetHistory.builder()
             .asset(asset)
@@ -138,26 +124,23 @@ public class AssignmentService {
             .findByAssetIdAndReturnedAtIsNull(assetId)
             .orElseThrow(() -> AppException.badRequest(ErrorCode.ASSET_NOT_ASSIGNED));
 
-        if (returnedBy.getRole() == UserRole.STAFF) {
-            if (assignment.getAssignedToUser() == null
-                || !assignment.getAssignedToUser().getId().equals(returnedBy.getId())
-            ) {
-                throw AppException.badRequest(ErrorCode.FORBIDDEN);
-            }
+        if (returnedBy.getRole() == UserRole.STAFF 
+            && (assignment.getAssignedToUser() == null || !assignment.getAssignedToUser().getId().equals(returnedBy.getId()))
+        ) {
+            throw AppException.badRequest(ErrorCode.FORBIDDEN);
         }
 
+        completeAssetReturnProcess(asset, assignment, req.returnNotes(), returnedBy);
+        return assetService.buildResponse(asset);
+    }
+
+    private void completeAssetReturnProcess(Asset asset, AssetAssignment assignment, String notes, User returnedBy) {
         AssetStatus prevStatus = asset.getStatus();
         User prevOwner = assignment.getAssignedToUser();
 
         assignment.setReturnedAt(Instant.now());
-        assignment.setReturnNotes(req.returnNotes());
-        assignmentRepository.save(assignment);
-
-        asset.setStatus(AssetStatus.REGISTERED);
-        asset.setOwner(null);
-        asset.setDepartment(null);
-        asset.setBranch(null);
-        assetRepository.save(asset);
+        assignment.setReturnNotes(notes);
+        assignmentRepository.saveAndFlush(assignment);
 
         Branch returnedFromBranch = null;
         if (assignment.getAssignedToBranch() != null) {
@@ -165,6 +148,12 @@ public class AssignmentService {
         } else if (assignment.getAssignedToDept() != null) {
             returnedFromBranch = assignment.getAssignedToDept().getBranch();
         }
+        
+        asset.setStatus(AssetStatus.REGISTERED);
+        asset.setOwner(null);
+        asset.setDepartment(null);
+        asset.setBranch(null);
+        assetRepository.save(asset);
 
         historyRepository.save(AssetHistory.builder()
             .asset(asset)
@@ -175,9 +164,8 @@ public class AssignmentService {
             .fromDept(assignment.getAssignedToDept())
             .fromBranch(returnedFromBranch)
             .changedBy(returnedBy)
-            .reason(req.returnNotes())
+            .reason(notes)
             .build());
-        return assetService.buildResponse(asset);
     }
 
     @Transactional
@@ -191,10 +179,28 @@ public class AssignmentService {
             throw AppException.badRequest(ErrorCode.INVALID_STATUS_TRANSITION);
         }
 
-        // close active assignment when asset becomes LOST or WRITTEN_OFF
-        if (current == AssetStatus.ASSIGNED 
-            && (target == AssetStatus.LOST || target == AssetStatus.WRITTEN_OFF)
-        ) {
+        if (current == AssetStatus.ASSIGNED && target == AssetStatus.REGISTERED) {
+            AssetAssignment assignment = assignmentRepository
+                .findByAssetIdAndReturnedAtIsNull(assetId)
+                .orElseThrow(() -> AppException.badRequest(ErrorCode.ASSET_NOT_ASSIGNED));
+            completeAssetReturnProcess(asset, assignment, req.reason(), changedBy);
+            return assetService.buildResponse(asset);
+        }
+
+        if (current == AssetStatus.ASSIGNED && target == AssetStatus.IN_REPAIR) {
+            // close assignment record 
+            // but keep owner in asset
+            Optional<AssetAssignment> active = assignmentRepository.findByAssetIdAndReturnedAtIsNull(assetId);
+            active.ifPresent(a -> {
+                a.setReturnedAt(Instant.now());
+                a.setReturnNotes("Auto-closed: asset sent to repair");
+                assignmentRepository.save(a);
+            });
+        } else if (current == AssetStatus.IN_REPAIR && target == AssetStatus.REGISTERED) {
+            asset.setOwner(null);
+            asset.setDepartment(null);
+            asset.setBranch(null);
+        } else if (target == AssetStatus.LOST || target == AssetStatus.WRITTEN_OFF) {
             Optional<AssetAssignment> active = assignmentRepository.findByAssetIdAndReturnedAtIsNull(assetId);
             active.ifPresent(a -> {
                 a.setReturnedAt(Instant.now());

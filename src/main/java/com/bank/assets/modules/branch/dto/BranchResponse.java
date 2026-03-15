@@ -9,9 +9,32 @@ public record BranchResponse(
     UUID id,
     String name,
     String location,
-    Instant createdAt
+    Instant createdAt,
+    boolean isActive,
+    Instant archivedAt,
+    Boolean canDelete
 ) {
     public static BranchResponse from(Branch b) {
-        return new BranchResponse(b.getId(), b.getName(), b.getLocation(), b.getCreatedAt());
+        return new BranchResponse(
+            b.getId(), 
+            b.getName(), 
+            b.getLocation(), 
+            b.getCreatedAt(),
+            b.isActive(), 
+            b.getArchivedAt(), 
+            null
+        );
+    }
+
+    public static BranchResponse from(Branch b, boolean canDelete) {
+        return new BranchResponse(
+            b.getId(), 
+            b.getName(), 
+            b.getLocation(), 
+            b.getCreatedAt(),
+            b.isActive(), 
+            b.getArchivedAt(), 
+            canDelete
+        );
     }
 }

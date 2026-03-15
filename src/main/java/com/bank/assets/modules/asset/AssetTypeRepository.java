@@ -12,6 +12,8 @@ public interface AssetTypeRepository extends JpaRepository<AssetType, UUID> {
 
     boolean existsByNameIgnoreCaseAndCategoryId(String name, UUID categoryId);
 
+    boolean existsByCategoryId(UUID categoryId);
+
     @Query("SELECT t FROM AssetType t JOIN FETCH t.category ORDER BY t.name")
     List<AssetType> findAllWithCategory();
 

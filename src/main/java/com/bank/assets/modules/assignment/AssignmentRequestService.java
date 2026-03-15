@@ -109,6 +109,7 @@ public class AssignmentRequestService {
             .asset(asset)
             .assignedToUser(assignedToUser)
             .assignedBy(admin)
+            .assignedAt(Instant.now())
             .notes(request.getReason())
             .build();
         assignmentRepository.save(assignment);

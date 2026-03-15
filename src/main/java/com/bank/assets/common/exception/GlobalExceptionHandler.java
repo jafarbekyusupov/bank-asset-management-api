@@ -2,6 +2,7 @@ package com.bank.assets.common.exception;
 
 import com.bank.assets.common.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
@@ -14,11 +15,16 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @Value("${app.show-trace:false}")
+    private boolean showTrace;
 
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ApiResponse<Void>> handleApp(AppException ex) {
@@ -75,9 +81,12 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {
+    public ResponseEntity<ApiResponse<List<String>>> handleGeneric(Exception ex) {
         log.error("Unhandled exception", ex);
+        List<String> trace = showTrace
+            ? Arrays.stream(ex.getStackTrace()).map(StackTraceElement::toString).toList()
+            : null;
         return ResponseEntity.internalServerError()
-                .body(ApiResponse.error("INTERNAL_ERROR", "Internal server error"));
+                .body(new ApiResponse<>(false, ex.getMessage(), trace, "INTERNAL_ERROR"));
     }
 }

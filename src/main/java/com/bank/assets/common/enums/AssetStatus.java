@@ -18,7 +18,6 @@ public enum AssetStatus {
 
     public boolean canTransitionTo(AssetStatus target) {
         if (target == ASSIGNED) return false;
-        if (this == ASSIGNED && target == REGISTERED) return false;
         return ALLOWED.getOrDefault(this, EnumSet.noneOf(AssetStatus.class)).contains(target);
     }
 
@@ -26,7 +25,7 @@ public enum AssetStatus {
 
     static {
         ALLOWED.put(REGISTERED, EnumSet.of(IN_REPAIR, LOST, WRITTEN_OFF));
-        ALLOWED.put(ASSIGNED, EnumSet.of(IN_REPAIR, LOST, WRITTEN_OFF));
+        ALLOWED.put(ASSIGNED, EnumSet.of(REGISTERED, IN_REPAIR, LOST, WRITTEN_OFF));
         ALLOWED.put(IN_REPAIR, EnumSet.of(REGISTERED, LOST, WRITTEN_OFF));
         ALLOWED.put(LOST, EnumSet.of(WRITTEN_OFF));
         ALLOWED.put(WRITTEN_OFF, EnumSet.noneOf(AssetStatus.class));

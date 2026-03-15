@@ -7,5 +7,10 @@ public record AssetTypeResponse(
         String name,
         String description,
         UUID categoryId,
-        String categoryName
-) {}
+        String categoryName,
+        Boolean canDelete
+) {
+    public AssetTypeResponse(UUID id, String name, String description, UUID categoryId, String categoryName) {
+        this(id, name, description, categoryId, categoryName, null);
+    }
+}

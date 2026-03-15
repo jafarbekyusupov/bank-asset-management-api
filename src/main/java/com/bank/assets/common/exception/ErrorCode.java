@@ -31,11 +31,20 @@ public enum ErrorCode {
 
     // org
     BRANCH_NOT_FOUND("Branch not found"),
+    BRANCH_HAS_DEPARTMENTS("Cannot delete branch: it still has departments"),
+    BRANCH_HAS_USERS("Cannot delete branch: it still has users assigned"),
+    BRANCH_HAS_ASSETS("Cannot delete branch: it still has assets in scope"),
     DEPARTMENT_NOT_FOUND("Department not found"),
+    DEPARTMENT_HAS_USERS("Cannot delete department: it still has users"),
+    DEPARTMENT_HAS_ASSETS("Cannot delete department: it still has assets"),
     CATEGORY_NOT_FOUND("Asset category not found"),
     CATEGORY_ALREADY_EXISTS("A category with this name already exists"),
+    CATEGORY_HAS_TYPES("Cannot delete category: it still has asset types"),
+    CATEGORY_HAS_ASSETS("Cannot delete category: it still has assets"),
     TYPE_NOT_FOUND("Asset type not found"),
     TYPE_ALREADY_EXISTS("An asset type with this name already exists in this category"),
+    TYPE_HAS_ASSETS("Cannot delete type: it still has assets"),
+    USER_HAS_ASSETS("Cannot delete user: they still have assets assigned"),
 
     // general
     FORBIDDEN("You do not have permission to perform this action"),

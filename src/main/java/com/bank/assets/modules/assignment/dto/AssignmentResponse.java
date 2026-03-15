@@ -10,6 +10,7 @@ public record AssignmentResponse(
         AssetInfo asset,
         UserInfo assignedToUser,
         DeptInfo assignedToDept,
+        BranchInfo assignedToBranch,
         UserInfo assignedBy,
         Instant assignedAt,
         Instant acknowledgedAt,
@@ -20,6 +21,7 @@ public record AssignmentResponse(
     public record AssetInfo(UUID id, String name, String serialNumber) {}
     public record UserInfo(UUID id, String fullName, String email) {}
     public record DeptInfo(UUID id, String name) {}
+    public record BranchInfo(UUID id, String name) {}
 
     public static AssignmentResponse from(AssetAssignment a) {
         return new AssignmentResponse(
@@ -30,6 +32,9 @@ public record AssignmentResponse(
                         : null,
                 a.getAssignedToDept() != null
                         ? new DeptInfo(a.getAssignedToDept().getId(), a.getAssignedToDept().getName()) 
+                        : null,
+                a.getAssignedToBranch() != null
+                        ? new BranchInfo(a.getAssignedToBranch().getId(), a.getAssignedToBranch().getName())
                         : null,
                 a.getAssignedBy() != null
                         ? new UserInfo(a.getAssignedBy().getId(), a.getAssignedBy().getFullName(), a.getAssignedBy().getEmail()) 
