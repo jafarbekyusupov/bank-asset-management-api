@@ -13,5 +13,5 @@ public record CreateUserRequest(
         @NotNull UserRole role,
         UUID deptId,
         UUID branchId,
-        boolean isDev
+        Boolean isDev
 ) {}

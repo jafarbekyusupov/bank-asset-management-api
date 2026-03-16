@@ -56,7 +56,7 @@ public class UserService {
             .email(req.email())
             .role(req.role())
             .status(UserStatus.PENDING)
-            .isDev(req.isDev())
+            .isDev(Boolean.TRUE.equals(req.isDev()))
             .department(dept)
             .branch(branch)
             .build();
