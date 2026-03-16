@@ -49,10 +49,12 @@ public class UserController {
     public ResponseEntity<ApiResponse<PageResponse<UserResponse>>> list(
         @RequestParam(required = false) UserStatus status,
         @RequestParam(required = false) UserRole role,
+        @RequestParam(required = false) UUID deptId,
+        @RequestParam(required = false) UUID branchId,
         @RequestParam(required = false) String search,
         @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(userService.list(status, role, search, pageable))));
+        return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(userService.list(status, role, deptId, branchId, search, pageable))));
     }
 
     @GetMapping("/{id}")
