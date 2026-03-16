@@ -5,12 +5,16 @@ import com.bank.assets.common.enums.UserStatus;
 import jakarta.persistence.criteria.JoinType;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.UUID;
+
 public class UserSpecification {
 
-    public static Specification<User> withFilters(UserStatus status, UserRole role, String search) {
+    public static Specification<User> withFilters(UserStatus status, UserRole role, UUID deptId, UUID branchId, String search) {
         return Specification
             .where(hasStatus(status))
             .and(hasRole(role))
+            .and(hasDept(deptId))
+            .and(hasBranch(branchId))
             .and(matchesSearch(search));
     }
 
@@ -22,6 +26,16 @@ public class UserSpecification {
     private static Specification<User> hasRole(UserRole role) {
         if (role == null) return null;
         return (root, q, cb) -> cb.equal(root.get("role"), role);
+    }
+
+    private static Specification<User> hasDept(UUID deptId) {
+        if (deptId == null) return null;
+        return (root, q, cb) -> cb.equal(root.get("department").get("id"), deptId);
+    }
+
+    private static Specification<User> hasBranch(UUID branchId) {
+        if (branchId == null) return null;
+        return (root, q, cb) -> cb.equal(root.get("branch").get("id"), branchId);
     }
 
     private static Specification<User> matchesSearch(String search) {

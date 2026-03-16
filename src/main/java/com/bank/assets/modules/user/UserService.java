@@ -64,9 +64,16 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public Page<UserResponse> list(UserStatus status, UserRole role, String search, Pageable pageable) {
+    public Page<UserResponse> list(
+        UserStatus status, 
+        UserRole role, 
+        UUID deptId, 
+        UUID branchId, 
+        String search, 
+        Pageable pageable
+    ) {
         return userRepository
-            .findAll(UserSpecification.withFilters(status, role, search), pageable)
+            .findAll(UserSpecification.withFilters(status, role, deptId, branchId, search), pageable)
             .map(UserResponse::from);
     }
 
