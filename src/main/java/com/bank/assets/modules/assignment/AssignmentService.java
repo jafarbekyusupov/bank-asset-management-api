@@ -52,6 +52,10 @@ public class AssignmentService {
 
         Asset asset = assetService.findOrThrow(assetId);
 
+        if (asset.getStatus() == AssetStatus.LOST || asset.getStatus() == AssetStatus.WRITTEN_OFF) {
+            throw AppException.badRequest(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+
         if (asset.getStatus() == AssetStatus.ASSIGNED) {
             // force reassign: autoclose current assignment
             AssetAssignment current = assignmentRepository

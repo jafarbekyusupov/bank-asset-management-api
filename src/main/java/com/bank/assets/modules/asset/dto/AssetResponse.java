@@ -26,7 +26,6 @@ public record AssetResponse(
         BigDecimal purchasePrice,
         Map<String, Object> specifications,
         boolean hasImage,
-        String qrCodePath,
         String notes,
         UserInfo createdBy,
         Instant createdAt,
@@ -63,7 +62,6 @@ public record AssetResponse(
                 a.getPurchasePrice(),
                 a.getSpecifications(),
                 a.getImageUrl() != null,
-                "/pub/asset/" + a.getId() + "/qr",
                 a.getNotes(),
                 a.getCreatedBy() != null
                         ? new UserInfo(a.getCreatedBy().getId(), a.getCreatedBy().getFullName(), a.getCreatedBy().getEmail()) 

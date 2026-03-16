@@ -60,7 +60,6 @@ app:
     secret-key: minioadmin
     bucket-name: bank-assets
   qr:
-    base-url: http://localhost:3000
     size: 300
 
 logging:
@@ -112,7 +111,6 @@ app:
     secret-key: ${MINIO_SECRET_KEY}
     bucket-name: ${MINIO_BUCKET}
   qr:
-    base-url: ${QR_BASE_URL}
     size: 300
 
 logging:

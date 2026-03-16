@@ -9,11 +9,8 @@ import com.bank.assets.modules.branch.Branch;
 import com.bank.assets.modules.branch.BranchRepository;
 import com.bank.assets.modules.branch.Department;
 import com.bank.assets.modules.branch.DepartmentRepository;
-import com.bank.assets.modules.user.dto.AssignDepartmentRequest;
 import com.bank.assets.modules.user.dto.CreateUserRequest;
-import com.bank.assets.modules.user.dto.UpdateRoleRequest;
 import com.bank.assets.modules.user.dto.UpdateUserRequest;
-import com.bank.assets.modules.user.dto.UpdateUserStatusRequest;
 import com.bank.assets.modules.user.dto.UserResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -89,17 +86,6 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse changeStatus(UUID targetId, UpdateUserStatusRequest req, User admin) {
-        if (targetId.equals(admin.getId())) {
-            throw AppException.badRequest(ErrorCode.FORBIDDEN);
-        }
-
-        User target = findOrThrow(targetId);
-        target.setStatus(req.newStatus());
-        return UserResponse.from(userRepository.save(target));
-    }
-
-    @Transactional
     public UserResponse approveUser(UUID targetId, User admin) {
         if (targetId.equals(admin.getId())) {
             throw AppException.badRequest(ErrorCode.FORBIDDEN);
@@ -107,31 +93,6 @@ public class UserService {
         User target = findOrThrow(targetId);
         target.setStatus(UserStatus.ACTIVE);
         return UserResponse.from(userRepository.save(target));
-    }
-
-    @Transactional
-    public UserResponse assignDepartment(UUID userId, AssignDepartmentRequest req) {
-        User user = findOrThrow(userId);
-
-        if (req.departmentId() != null) {
-            Department dept = departmentRepository
-                .findById(req.departmentId())
-                .orElseThrow(() -> AppException.notFound(ErrorCode.DEPARTMENT_NOT_FOUND));
-            user.setDepartment(dept);
-            user.setBranch(dept.getBranch());
-        } else {
-            user.setDepartment(null);
-        }
-
-        if (req.branchId() != null && req.departmentId() == null) {
-            Branch branch = branchRepository
-                .findById(req.branchId())
-                .orElseThrow(() -> AppException.notFound(ErrorCode.BRANCH_NOT_FOUND));
-            user.setBranch(branch);
-        } else if (req.branchId() == null && req.departmentId() == null) {
-            user.setBranch(null);
-        }
-        return UserResponse.from(userRepository.save(user));
     }
 
     @Transactional
@@ -165,16 +126,14 @@ public class UserService {
             user.setBranch(null);
         }
 
-        return UserResponse.from(userRepository.save(user));
-    }
-
-    @Transactional
-    public UserResponse updateRole(UUID targetId, UpdateRoleRequest req, User admin) {
-        if (targetId.equals(admin.getId())) {
-            throw AppException.badRequest(ErrorCode.FORBIDDEN);
+        if (req.role() != null) {
+            user.setRole(req.role());
         }
-        User user = findOrThrow(targetId);
-        user.setRole(req.role());
+
+        if (req.status() != null) {
+            user.setStatus(req.status());
+        }
+
         return UserResponse.from(userRepository.save(user));
     }
 
