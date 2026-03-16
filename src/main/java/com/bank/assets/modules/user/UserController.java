@@ -4,11 +4,8 @@ import com.bank.assets.common.enums.UserRole;
 import com.bank.assets.common.enums.UserStatus;
 import com.bank.assets.common.response.ApiResponse;
 import com.bank.assets.common.response.PageResponse;
-import com.bank.assets.modules.user.dto.AssignDepartmentRequest;
 import com.bank.assets.modules.user.dto.CreateUserRequest;
-import com.bank.assets.modules.user.dto.UpdateRoleRequest;
 import com.bank.assets.modules.user.dto.UpdateUserRequest;
-import com.bank.assets.modules.user.dto.UpdateUserStatusRequest;
 import com.bank.assets.modules.user.dto.UserResponse;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -63,16 +60,6 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.ok(userService.getById(id)));
     }
 
-    @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<UserResponse>> changeStatus(
-        @PathVariable UUID id,
-        @Valid @RequestBody UpdateUserStatusRequest req,
-        @AuthenticationPrincipal User currentUser
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok("User status updated.", userService.changeStatus(id, req, currentUser)));
-    }
-
     @PatchMapping("/{id}/approve")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> approveUser(
@@ -80,15 +67,6 @@ public class UserController {
         @AuthenticationPrincipal User currentUser
     ) {
         return ResponseEntity.ok(ApiResponse.ok("User has been approved.", userService.approveUser(id, currentUser)));
-    }
-
-    @PatchMapping("/{id}/dept")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<UserResponse>> assignDepartment(
-        @PathVariable UUID id,
-        @RequestBody AssignDepartmentRequest req
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok("User department updated.", userService.assignDepartment(id, req)));
     }
 
     @PutMapping("/{id}")
@@ -99,16 +77,6 @@ public class UserController {
         @AuthenticationPrincipal User currentUser
     ) {
         return ResponseEntity.ok(ApiResponse.ok("User updated.", userService.updateUser(id, req, currentUser)));
-    }
-
-    @PatchMapping("/{id}/role")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<UserResponse>> updateRole(
-        @PathVariable UUID id,
-        @Valid @RequestBody UpdateRoleRequest req,
-        @AuthenticationPrincipal User currentUser
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok("User role updated.", userService.updateRole(id, req, currentUser)));
     }
 
     @DeleteMapping("/{id}")
