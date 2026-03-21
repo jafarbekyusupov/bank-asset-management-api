@@ -97,17 +97,22 @@ public class UserService {
 
     @Transactional
     public UserResponse updateUser(UUID targetId, UpdateUserRequest req, User admin) {
-        if (targetId.equals(admin.getId())) {
+        boolean isSelf = targetId.equals(admin.getId());
+        if (isSelf && (req.role() != null || req.status() != null)) {
             throw AppException.badRequest(ErrorCode.FORBIDDEN);
         }
+ 
         User user = findOrThrow(targetId);
-
-        if (!user.getEmail().equals(req.email()) && userRepository.existsByEmail(req.email())) {
-            throw AppException.conflict(ErrorCode.USER_ALREADY_EXISTS);
+        if (req.email() != null) {
+            if (!user.getEmail().equals(req.email()) && userRepository.existsByEmail(req.email())) {
+                throw AppException.conflict(ErrorCode.USER_ALREADY_EXISTS);
+            }
+            user.setEmail(req.email());
         }
 
-        user.setFullName(req.fullName());
-        user.setEmail(req.email());
+        if (req.fullName() != null) {
+            user.setFullName(req.fullName());
+        }
 
         if (req.deptId() != null) {
             Department dept = departmentRepository
@@ -121,9 +126,6 @@ public class UserService {
                 .findById(req.branchId())
                 .orElseThrow(() -> AppException.notFound(ErrorCode.BRANCH_NOT_FOUND));
             user.setBranch(branch);
-        } else {
-            user.setDepartment(null);
-            user.setBranch(null);
         }
 
         if (req.role() != null) {
