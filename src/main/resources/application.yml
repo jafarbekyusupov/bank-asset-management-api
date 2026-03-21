@@ -61,6 +61,8 @@ app:
     bucket-name: bank-assets
   qr:
     size: 300
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
 
 logging:
   level:
@@ -112,6 +114,8 @@ app:
     bucket-name: ${MINIO_BUCKET}
   qr:
     size: 300
+  gemini:
+    api-key: ${GEMINI_API_KEY}
 
 logging:
   level:
