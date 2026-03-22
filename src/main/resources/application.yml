@@ -42,6 +42,7 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+    repair-on-migrate: true
 
 app:
   jwt:
@@ -62,7 +63,10 @@ app:
   qr:
     size: 300
   gemini:
-    api-key: ${GEMINI_API_KEY:}
+    base-url: ${GEMINI_BASE_URL}
+    api-key: ${GEMINI_API_KEY}
+    context-window: ${GEMINI_CONTEXT_WINDOW:20}
+    max-tool-rounds: ${GEMINI_MAX_TOOL_ROUND:5}
 
 logging:
   level:
@@ -96,6 +100,7 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    repair-on-migrate: true
 
 app:
   jwt:
@@ -115,7 +120,10 @@ app:
   qr:
     size: 300
   gemini:
+    base-url: ${GEMINI_BASE_URL}
     api-key: ${GEMINI_API_KEY}
+    context-window: ${GEMINI_CONTEXT_WINDOW}
+    max-tool-rounds: ${GEMINI_MAX_TOOL_ROUNDS}
 
 logging:
   level:
