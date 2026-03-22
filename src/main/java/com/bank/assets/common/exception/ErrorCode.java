@@ -6,6 +6,9 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ErrorCode {
+    // general
+    FORBIDDEN("You do not have permission to perform this action"),
+    VALIDATION_ERROR("Validation failed"),
 
     // auth
     USER_NOT_FOUND("User not found"),
@@ -46,9 +49,8 @@ public enum ErrorCode {
     TYPE_HAS_ASSETS("Cannot delete type: it still has assets"),
     USER_HAS_ASSETS("Cannot delete user: they still have assets assigned"),
 
-    // general
-    FORBIDDEN("You do not have permission to perform this action"),
-    VALIDATION_ERROR("Validation failed");
+    // session
+    SESSION_NOT_FOUND("Session not found");
 
     private final String message;
 }
