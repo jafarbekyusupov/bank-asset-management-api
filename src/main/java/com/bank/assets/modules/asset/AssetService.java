@@ -90,6 +90,12 @@ public class AssetService {
         return buildResponse(findOrThrow(id));
     }
 
+    @Transactional(readOnly = true)
+    public AssetResponse getBySerialNumber(String serialNumber) {
+        return buildResponse(assetRepository.findBySerialNumber(serialNumber)
+            .orElseThrow(() -> AppException.notFound(ErrorCode.ASSET_NOT_FOUND)));
+    }
+
     @Transactional
     public AssetResponse update(UUID id, UpdateAssetRequest req, User updatedBy) {
         Asset asset = findOrThrow(id);

@@ -86,6 +86,11 @@ public class AssetController {
         return ResponseEntity.ok(ApiResponse.ok(assetService.getById(id)));
     }
 
+    @GetMapping("/serial/{serialNumber}")
+    public ResponseEntity<ApiResponse<AssetResponse>> getBySerialNumber(@PathVariable String serialNumber) {
+        return ResponseEntity.ok(ApiResponse.ok(assetService.getBySerialNumber(serialNumber)));
+    }
+
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<AssetResponse>> update(

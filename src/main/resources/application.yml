@@ -46,7 +46,7 @@ spring:
 
 app:
   jwt:
-    secret: local-dev-secret-key-160-bits-is-not-secure-enough
+    secret: ${JWT_SECRET}
     expiration-ms: 86400000
     refresh-expiration-ms: 604800000
   resend:

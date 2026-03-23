@@ -22,8 +22,12 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -53,12 +57,13 @@ public class AiChatService {
         saveMessage(session, ChatRole.user, req.message());
 
         ArrayNode contents = buildContentsFromDB(session, req.message());
-        String responseText = runAgenticLoop(contents, user);
+        LinkedHashMap<String, UUID> seen = new LinkedHashMap<>();
+        String responseText = runAgenticLoop(contents, user, seen);
 
         saveMessage(session, ChatRole.model, responseText);
         touchSession(session);
 
-        return new ChatResponse(responseText);
+        return new ChatResponse(responseText, new ArrayList<>(seen.values()));
     }
 
 
@@ -68,19 +73,24 @@ public class AiChatService {
 
         ArrayNode contents = buildContentsFromDB(session, req.message());
         StringBuilder accumulated = new StringBuilder();
+        LinkedHashMap<String, UUID> seen = new LinkedHashMap<>();
 
         try {
             for (int round = 0; round < maxToolRounds; round++) {
-                boolean hadToolCalls = streamOneRound(contents, user, emitter, accumulated);
+                boolean hadToolCalls = streamOneRound(contents, user, emitter, accumulated, seen);
                 if (!hadToolCalls) break;
                 accumulated.setLength(0);
             }
-            emitter.send(SseEmitter.event().name("done").data(""));
-            emitter.complete();
             if (!accumulated.isEmpty()) {
                 saveMessage(session, ChatRole.model, accumulated.toString());
                 touchSession(session);
             }
+            if (!seen.isEmpty()) {
+                emitter.send(SseEmitter.event().name("assets")
+                    .data(objectMapper.writeValueAsString(seen.values())));
+            }
+            emitter.send(SseEmitter.event().name("done").data(""));
+            emitter.complete();
         } catch (Exception e) {
             log.error("stream error for session {}: {}", req.sessionId(), e.getMessage());
             emitter.completeWithError(e);
@@ -88,14 +98,14 @@ public class AiChatService {
     }
 
     // non streaming
-    private String runAgenticLoop(ArrayNode contents, User user) {
+    private String runAgenticLoop(ArrayNode contents, User user, LinkedHashMap<String, UUID> seen) {
         for (int round = 0; round < maxToolRounds; round++) {
             String raw = callGemini(":generateContent", buildBody(contents, user));
             JsonNode response = parseJson(raw);
             JsonNode parts = response.path("candidates").path(0).path("content").path("parts");
 
             if (parts.path(0).has("functionCall")) {
-                appendToolRound(contents, parts, user);
+                appendToolRound(contents, parts, user, seen);
                 continue;
             }
             return parts.path(0).path("text").asText("");
@@ -110,7 +120,8 @@ public class AiChatService {
      */
     private boolean streamOneRound(
         ArrayNode contents, User user,
-        SseEmitter emitter, StringBuilder accumulated
+        SseEmitter emitter, StringBuilder accumulated,
+        LinkedHashMap<String, UUID> seen
     ) throws Exception {
         ArrayNode functionCallParts = objectMapper.createArrayNode();
         String url = geminiBaseUrl + ":streamGenerateContent?alt=sse&key=" + apiKey;
@@ -159,6 +170,7 @@ public class AiChatService {
             JsonNode fc = part.path("functionCall");
             String name = fc.path("name").asText();
             Object result = toolRegistry.execute(name, fc.path("args"), user);
+            collectAssetIds(result, seen);
             responseParts.addObject()
                 .putObject("functionResponse")
                 .put("name", name)
@@ -168,7 +180,7 @@ public class AiChatService {
         return true;
     }
 
-    private void appendToolRound(ArrayNode contents, JsonNode parts, User user) {
+    private void appendToolRound(ArrayNode contents, JsonNode parts, User user, LinkedHashMap<String, UUID> seen) {
         ObjectNode modelTurn = objectMapper.createObjectNode();
         modelTurn.put("role", "model");
         modelTurn.set("parts", parts.deepCopy());
@@ -183,12 +195,28 @@ public class AiChatService {
             JsonNode fc = part.path("functionCall");
             String name = fc.path("name").asText();
             Object result = toolRegistry.execute(name, fc.path("args"), user);
+            collectAssetIds(result, seen);
             responseParts.addObject()
                 .putObject("functionResponse")
                 .put("name", name)
                 .set("response", wrapToolResult(result));
         }
         contents.add(userTurn);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void collectAssetIds(Object result, LinkedHashMap<String, UUID> seen) {
+        if (result instanceof List<?> list) {
+            for (Object item : list) {
+                if (item instanceof Map<?, ?> map && map.containsKey("id") && map.containsKey("serialNumber")) {
+                    String sn = map.get("serialNumber").toString();
+                    seen.putIfAbsent(sn, UUID.fromString(map.get("id").toString()));
+                }
+            }
+        } else if (result instanceof Map<?, ?> map && map.containsKey("id") && map.containsKey("serialNumber")) {
+            String sn = map.get("serialNumber").toString();
+            seen.putIfAbsent(sn, UUID.fromString(map.get("id").toString()));
+        }
     }
 
     private ObjectNode wrapToolResult(Object result) {
@@ -259,7 +287,7 @@ public class AiChatService {
             sb.append("- Branch: ").append(user.getBranch().getName()).append("\n");
 
         sb.append("\nBe concise and practical. ");
-        sb.append("When recommending available assets, always include the serial number so the user can submit an assignment request. ");
+        sb.append("When recommending available assets, always include the serial number so the user can identify them. ");
         sb.append("Asset statuses: REGISTERED = available, ASSIGNED = in use, IN_REPAIR, LOST, WRITTEN_OFF.");
         return sb.toString();
     }
