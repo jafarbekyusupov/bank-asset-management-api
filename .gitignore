@@ -28,3 +28,5 @@ docker-compose.yml
 /dist/
 /nbdist/
 /.nb-gradle/
+
+.env

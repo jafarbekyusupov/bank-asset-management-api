@@ -160,6 +160,7 @@ public class AiToolRegistry {
     private Object getAssetDetails(String serialNumber) {
     return assetRepository.findBySerialNumber(serialNumber)
         .<Object>map(a -> Map.ofEntries(
+            Map.entry("id", a.getId().toString()),
             Map.entry("name", nullSafe(a.getName())),
             Map.entry("serialNumber", nullSafe(a.getSerialNumber())),
             Map.entry("brand", nullSafe(a.getBrand())),
@@ -202,6 +203,7 @@ public class AiToolRegistry {
 
     private Map<String, Object> assetToMap(Asset a) {
         return Map.ofEntries(
+            Map.entry("id", a.getId().toString()),
             Map.entry("name", a.getName()),
             Map.entry("serialNumber", a.getSerialNumber()),
             Map.entry("brand", nullSafe(a.getBrand())),
