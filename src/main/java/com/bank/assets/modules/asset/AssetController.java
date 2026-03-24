@@ -77,7 +77,7 @@ public class AssetController {
         @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ResponseEntity.ok(ApiResponse.ok(
-            PageResponse.from(assetService.list(AssetStatus.REGISTERED, null, null, null, null, null, currentUser, pageable))
+            PageResponse.from(assetService.listAssignable(currentUser, pageable))
         ));
     }
 

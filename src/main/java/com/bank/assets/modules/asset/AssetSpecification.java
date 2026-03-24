@@ -42,6 +42,36 @@ public class AssetSpecification {
         };
     }
 
+    public static Specification<Asset> assignableScopedFor(User user) {
+        return switch (user.getRole()) {
+            case ADMIN, BRANCH_MANAGER -> (root, q, cb) -> cb.and(
+                cb.equal(root.get("status"), AssetStatus.REGISTERED),
+                cb.isNull(root.get("owner"))
+            );
+            case DEPT_MANAGER -> {
+                if (user.getBranch() == null) yield (root, q, cb) -> cb.disjunction();
+                UUID branchId = user.getBranch().getId();
+                yield (root, q, cb) -> cb.and(
+                    cb.equal(root.get("status"), AssetStatus.ASSIGNED),
+                    cb.isNull(root.get("owner")),
+                    cb.or(
+                        cb.equal(root.join("department", JoinType.LEFT).get("branch").get("id"), branchId),
+                        cb.equal(root.join("branch", JoinType.LEFT).get("id"), branchId)
+                    )
+                );
+            }
+            case STAFF -> {
+                if (user.getDepartment() == null) yield (root, q, cb) -> cb.disjunction();
+                UUID deptId = user.getDepartment().getId();
+                yield (root, q, cb) -> cb.and(
+                    cb.equal(root.get("status"), AssetStatus.ASSIGNED),
+                    cb.isNull(root.get("owner")),
+                    cb.equal(root.join("department", JoinType.LEFT).get("id"), deptId)
+                );
+            }
+        };
+    }
+
     private static Specification<Asset> hasStatus(AssetStatus status) {
         return status == null ? null : (root, query, cb) -> cb.equal(root.get("status"), status);
     }

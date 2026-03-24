@@ -133,6 +133,12 @@ public class AssetService {
         assetRepository.deleteById(id);
     }
 
+    @Transactional(readOnly = true)
+    public Page<AssetResponse> listAssignable(User currentUser, Pageable pageable) {
+        Specification<Asset> spec = AssetSpecification.assignableScopedFor(currentUser);
+        return assetRepository.findAll(spec, pageable).map(this::buildResponse);
+    }
+
     public AssetResponse buildResponse(Asset asset) {
         return AssetResponse.from(asset);
     }
