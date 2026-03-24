@@ -52,7 +52,7 @@ public class AssetSpecification {
                 if (user.getBranch() == null) yield (root, q, cb) -> cb.disjunction();
                 UUID branchId = user.getBranch().getId();
                 yield (root, q, cb) -> cb.and(
-                    cb.equal(root.get("status"), AssetStatus.ASSIGNED),
+                    cb.equal(root.get("status"), AssetStatus.REGISTERED),
                     cb.isNull(root.get("owner")),
                     cb.or(
                         cb.equal(root.join("department", JoinType.LEFT).get("branch").get("id"), branchId),
@@ -64,7 +64,7 @@ public class AssetSpecification {
                 if (user.getDepartment() == null) yield (root, q, cb) -> cb.disjunction();
                 UUID deptId = user.getDepartment().getId();
                 yield (root, q, cb) -> cb.and(
-                    cb.equal(root.get("status"), AssetStatus.ASSIGNED),
+                    cb.equal(root.get("status"), AssetStatus.REGISTERED),
                     cb.isNull(root.get("owner")),
                     cb.equal(root.join("department", JoinType.LEFT).get("id"), deptId)
                 );
