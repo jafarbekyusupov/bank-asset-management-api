@@ -4,6 +4,7 @@ import com.bank.assets.common.enums.AssetStatus;
 import com.bank.assets.common.enums.UserRole;
 import com.bank.assets.common.response.ApiResponse;
 import com.bank.assets.common.response.PageResponse;
+import com.bank.assets.modules.asset.dto.AssetNoteResponse;
 import com.bank.assets.modules.asset.dto.AssetResponse;
 import com.bank.assets.modules.asset.dto.CreateAssetRequest;
 import com.bank.assets.modules.asset.dto.UpdateAssetRequest;
@@ -23,6 +24,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -84,6 +86,11 @@ public class AssetController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<AssetResponse>> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.ok(assetService.getById(id)));
+    }
+
+    @GetMapping("/{id}/notes")
+    public ResponseEntity<ApiResponse<List<AssetNoteResponse>>> getNotes(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok(assetService.getNotes(id)));
     }
 
     @GetMapping("/serial/{serialNumber}")

@@ -4,9 +4,11 @@ import com.bank.assets.common.enums.AssetAction;
 import com.bank.assets.common.enums.AssetStatus;
 import com.bank.assets.common.exception.AppException;
 import com.bank.assets.common.exception.ErrorCode;
+import com.bank.assets.modules.asset.dto.AssetNoteResponse;
 import com.bank.assets.modules.asset.dto.AssetResponse;
 import com.bank.assets.modules.asset.dto.CreateAssetRequest;
 import com.bank.assets.modules.asset.dto.UpdateAssetRequest;
+import com.bank.assets.modules.assignment.AssetAssignmentRepository;
 import com.bank.assets.modules.history.AssetHistory;
 import com.bank.assets.modules.history.AssetHistoryRepository;
 import com.bank.assets.modules.user.User;
@@ -17,7 +19,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -27,6 +32,7 @@ public class AssetService {
     private final AssetCategoryRepository categoryRepository;
     private final AssetTypeRepository typeRepository;
     private final AssetHistoryRepository historyRepository;
+    private final AssetAssignmentRepository assignmentRepository;
 
     @Transactional
     public AssetResponse create(CreateAssetRequest req, User createdBy) {
@@ -137,6 +143,20 @@ public class AssetService {
     public Page<AssetResponse> listAssignable(User currentUser, Pageable pageable) {
         Specification<Asset> spec = AssetSpecification.assignableScopedFor(currentUser);
         return assetRepository.findAll(spec, pageable).map(this::buildResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AssetNoteResponse> getNotes(UUID assetId) {
+        if (!assetRepository.existsById(assetId)) {
+            throw AppException.notFound(ErrorCode.ASSET_NOT_FOUND);
+        }
+        List<AssetNoteResponse> notes = new ArrayList<>();
+        historyRepository.findByAssetIdAndReasonIsNotNullOrderByChangedAtDesc(assetId)
+                .stream().map(AssetNoteResponse::fromHistory).forEach(notes::add);
+        assignmentRepository.findByAssetIdAndReturnedAtIsNotNullAndReturnNotesIsNotNullOrderByReturnedAtDesc(assetId)
+                .stream().map(AssetNoteResponse::fromAssignment).forEach(notes::add);
+        notes.sort(Comparator.comparing(AssetNoteResponse::date).reversed());
+        return notes;
     }
 
     public AssetResponse buildResponse(Asset asset) {
