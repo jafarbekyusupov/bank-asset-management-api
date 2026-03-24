@@ -90,6 +90,9 @@ public class AiSummarizerService {
             sb.append(i + 1).append(". [").append(note.type()).append("]");
             if (note.action() != null) sb.append(" (").append(note.action()).append(")");
             sb.append("\n");
+            if (note.oldStatus() != null && note.newStatus() != null) {
+                sb.append(" Status: ").append(note.oldStatus()).append(" -> ").append(note.newStatus()).append("\n");
+            }
             sb.append(" Content: ").append(note.content()).append("\n");
             sb.append(" By: ").append(note.author().fullName()).append("\n");
             sb.append(" Date: ").append(DATE_FMT.format(note.date())).append("\n\n");

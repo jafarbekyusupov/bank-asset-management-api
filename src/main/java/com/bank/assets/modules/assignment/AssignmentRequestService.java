@@ -107,6 +107,7 @@ public class AssignmentRequestService {
         assignmentRepository.findByAssetIdAndReturnedAtIsNull(asset.getId()).ifPresent(existing -> {
             existing.setReturnedAt(Instant.now());
             existing.setReturnNotes("Auto-closed: asset assigned to user via request approval");
+            existing.setSystemNote(true);
             assignmentRepository.saveAndFlush(existing);
         });
 
