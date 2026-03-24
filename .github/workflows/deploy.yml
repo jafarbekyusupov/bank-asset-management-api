@@ -3,6 +3,7 @@ name: vps deploy
 on:
   push:
     branches: [master]
+  workflow_dispatch:
 
 jobs:
   deploy:
