@@ -42,7 +42,7 @@ public class AssignmentRequestService {
 
         validateAssetInScope(asset, requestedBy);
 
-        if (assignmentRepository.existsByAssetIdAndReturnedAtIsNull(req.assetId())) {
+        if (assignmentRepository.existsByAssetIdAndAssignedToUserIsNotNullAndReturnedAtIsNull(req.assetId())) {
             throw AppException.conflict(ErrorCode.ASSET_ALREADY_ASSIGNED);
         }
 
