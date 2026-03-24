@@ -153,7 +153,7 @@ public class AssetService {
         List<AssetNoteResponse> notes = new ArrayList<>();
         historyRepository.findByAssetIdAndReasonIsNotNullOrderByChangedAtDesc(assetId)
                 .stream().map(AssetNoteResponse::fromHistory).forEach(notes::add);
-        assignmentRepository.findByAssetIdAndReturnedAtIsNotNullAndReturnNotesIsNotNullOrderByReturnedAtDesc(assetId)
+        assignmentRepository.findByAssetIdAndReturnedAtIsNotNullAndReturnNotesIsNotNullAndSystemNoteIsFalseOrderByReturnedAtDesc(assetId)
                 .stream().map(AssetNoteResponse::fromAssignment).forEach(notes::add);
         notes.sort(Comparator.comparing(AssetNoteResponse::date).reversed());
         return notes;

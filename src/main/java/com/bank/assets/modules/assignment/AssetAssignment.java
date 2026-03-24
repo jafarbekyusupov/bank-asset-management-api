@@ -52,6 +52,10 @@ public class AssetAssignment {
     @Column(name = "return_notes", columnDefinition = "TEXT")
     private String returnNotes;
 
+    @Column(name = "system_note", nullable = false)
+    @Builder.Default
+    private boolean systemNote = false;
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 }

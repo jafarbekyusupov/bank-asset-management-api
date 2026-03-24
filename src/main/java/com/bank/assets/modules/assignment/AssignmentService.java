@@ -62,7 +62,10 @@ public class AssignmentService {
 
         assignmentRepository
             .findByAssetIdAndReturnedAtIsNull(assetId)
-            .ifPresent(current -> completeAssetReturnProcess(asset, current, "Auto-returned: reassigned by admin", assignedBy));
+            .ifPresent(current -> {
+                current.setSystemNote(true);
+                completeAssetReturnProcess(asset, current, "Auto-returned: reassigned by admin", assignedBy);
+            });
 
         User targetUser = null;
         Department targetDept = null;
@@ -195,6 +198,7 @@ public class AssignmentService {
             assignmentRepository.findByAssetIdAndReturnedAtIsNull(assetId).ifPresent(a -> {
                 a.setReturnedAt(Instant.now());
                 a.setReturnNotes("Auto-closed: asset sent to repair");
+                a.setSystemNote(true);
                 assignmentRepository.save(a);
             });
         } else if (current == AssetStatus.IN_REPAIR && target == AssetStatus.REGISTERED) {
@@ -206,6 +210,7 @@ public class AssignmentService {
             active.ifPresent(a -> {
                 a.setReturnedAt(Instant.now());
                 a.setReturnNotes("Auto-closed: asset status changed to " + target);
+                a.setSystemNote(true);
                 assignmentRepository.save(a);
             });
             asset.setOwner(null);

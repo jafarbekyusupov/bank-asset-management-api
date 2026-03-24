@@ -13,5 +13,5 @@ public interface AssetAssignmentRepository extends JpaRepository<AssetAssignment
 
     boolean existsByAssetIdAndAssignedToUserIsNotNullAndReturnedAtIsNull(UUID assetId);
 
-    List<AssetAssignment> findByAssetIdAndReturnedAtIsNotNullAndReturnNotesIsNotNullOrderByReturnedAtDesc(UUID assetId);
+    List<AssetAssignment> findByAssetIdAndReturnedAtIsNotNullAndReturnNotesIsNotNullAndSystemNoteIsFalseOrderByReturnedAtDesc(UUID assetId);
 }
