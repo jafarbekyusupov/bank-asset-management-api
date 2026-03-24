@@ -65,6 +65,8 @@ public class AiChatController {
         @Valid @RequestBody SendMessageRequest req,
         @AuthenticationPrincipal User user
     ) {
+        if (user.getDepartment() != null) user.getDepartment().getName();
+        if (user.getBranch() != null) user.getBranch().getName();
         return ResponseEntity.ok(ApiResponse.ok(chatService.sendMessage(req, user)));
     }
 
