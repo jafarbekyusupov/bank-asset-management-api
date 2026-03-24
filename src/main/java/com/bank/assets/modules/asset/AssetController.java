@@ -4,6 +4,8 @@ import com.bank.assets.common.enums.AssetStatus;
 import com.bank.assets.common.enums.UserRole;
 import com.bank.assets.common.response.ApiResponse;
 import com.bank.assets.common.response.PageResponse;
+import com.bank.assets.modules.ai.AiSummarizerService;
+import com.bank.assets.modules.ai.dto.SummarizeResponse;
 import com.bank.assets.modules.asset.dto.AssetNoteResponse;
 import com.bank.assets.modules.asset.dto.AssetResponse;
 import com.bank.assets.modules.asset.dto.CreateAssetRequest;
@@ -34,6 +36,7 @@ import java.util.UUID;
 public class AssetController {
     private final AssetService assetService;
     private final StorageService storageService;
+    private final AiSummarizerService summarizerService;
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -91,6 +94,11 @@ public class AssetController {
     @GetMapping("/{id}/notes")
     public ResponseEntity<ApiResponse<List<AssetNoteResponse>>> getNotes(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.ok(assetService.getNotes(id)));
+    }
+
+    @PostMapping("/{id}/notes/summarize")
+    public ResponseEntity<ApiResponse<SummarizeResponse>> summarizeNotes(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok(new SummarizeResponse(summarizerService.summarize(id))));
     }
 
     @GetMapping("/serial/{serialNumber}")
