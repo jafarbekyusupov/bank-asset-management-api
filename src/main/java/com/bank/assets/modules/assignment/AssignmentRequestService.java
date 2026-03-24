@@ -99,7 +99,7 @@ public class AssignmentRequestService {
             throw AppException.badRequest(ErrorCode.INVALID_STATUS_TRANSITION);
         }
 
-        if (assignmentRepository.existsByAssetIdAndReturnedAtIsNull(asset.getId())) {
+        if (assignmentRepository.existsByAssetIdAndAssignedToUserIsNotNullAndReturnedAtIsNull(asset.getId())) {
             throw AppException.conflict(ErrorCode.ASSET_ALREADY_ASSIGNED);
         }
 
