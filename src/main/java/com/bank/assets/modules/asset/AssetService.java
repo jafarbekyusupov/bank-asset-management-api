@@ -151,7 +151,7 @@ public class AssetService {
             throw AppException.notFound(ErrorCode.ASSET_NOT_FOUND);
         }
         List<AssetNoteResponse> notes = new ArrayList<>();
-        historyRepository.findByAssetIdAndReasonIsNotNullOrderByChangedAtDesc(assetId)
+        historyRepository.findByAssetIdAndReasonIsNotNullAndSystemNoteIsFalseOrderByChangedAtDesc(assetId)
                 .stream().map(AssetNoteResponse::fromHistory).forEach(notes::add);
         assignmentRepository.findByAssetIdAndReturnedAtIsNotNullAndReturnNotesIsNotNullAndSystemNoteIsFalseOrderByReturnedAtDesc(assetId)
                 .stream().map(AssetNoteResponse::fromAssignment).forEach(notes::add);

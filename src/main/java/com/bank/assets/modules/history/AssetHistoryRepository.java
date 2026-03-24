@@ -13,7 +13,7 @@ import java.util.UUID;
 public interface AssetHistoryRepository extends JpaRepository<AssetHistory, UUID> {
     Page<AssetHistory> findByAssetIdOrderByChangedAtDesc(UUID assetId, Pageable pageable);
 
-    List<AssetHistory> findByAssetIdAndReasonIsNotNullOrderByChangedAtDesc(UUID assetId);
+    List<AssetHistory> findByAssetIdAndReasonIsNotNullAndSystemNoteIsFalseOrderByChangedAtDesc(UUID assetId);
 
     @Query("""
         SELECT h FROM AssetHistory h
