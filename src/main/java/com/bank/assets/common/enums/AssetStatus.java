@@ -13,7 +13,7 @@ public enum AssetStatus {
     WRITTEN_OFF;
 
     public boolean canBeAssigned() {
-        return this == REGISTERED || this == IN_REPAIR;
+        return this == REGISTERED || this == IN_REPAIR || this == ASSIGNED;
     }
 
     public boolean canTransitionTo(AssetStatus target) {
