@@ -13,6 +13,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -39,7 +42,7 @@ public class AuthService {
             throw AppException.conflict(ErrorCode.USER_ALREADY_EXISTS);
         }
 
-        user.setPasswordHash(passwordEncoder.encode(req.password()));
+        user.setPasswordHash(passwordEncoder.encode(sha1(req.password())));
 
         if (user.isDev()) {
             user.setStatus(UserStatus.ACTIVE);
@@ -94,8 +97,8 @@ public class AuthService {
             .findByEmail(req.email())
             .orElseThrow(() -> AppException.unauthorized(ErrorCode.INVALID_CREDENTIALS));
 
-        if (user.getPasswordHash() == null 
-            || !passwordEncoder.matches(req.password(), user.getPasswordHash())
+        if (user.getPasswordHash() == null
+            || !passwordEncoder.matches(sha1(req.password()), user.getPasswordHash())
         ) {
             throw AppException.unauthorized(ErrorCode.INVALID_CREDENTIALS);
         }
@@ -109,6 +112,18 @@ public class AuthService {
         }
 
         return buildAuthResponse(user);
+    }
+
+    private String sha1(String input) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-1");
+            byte[] hash = md.digest(input.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hash) sb.append(String.format("%02x", b));
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-1 unavailable", e);
+        }
     }
 
     private void sendOtp(User user, OtpPurpose purpose) {
