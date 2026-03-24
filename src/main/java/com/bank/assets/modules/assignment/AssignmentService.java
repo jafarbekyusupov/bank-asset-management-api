@@ -56,15 +56,13 @@ public class AssignmentService {
             throw AppException.badRequest(ErrorCode.INVALID_STATUS_TRANSITION);
         }
 
-        if (asset.getStatus() == AssetStatus.ASSIGNED) {
-            // force reassign: autoclose current assignment
-            AssetAssignment current = assignmentRepository
-                .findByAssetIdAndReturnedAtIsNull(assetId)
-                .orElseThrow(() -> AppException.badRequest(ErrorCode.ASSET_NOT_ASSIGNED));
-            completeAssetReturnProcess(asset, current, "Auto-returned: reassigned by admin", assignedBy);
-        } else if (!asset.getStatus().canBeAssigned()) {
+        if (!asset.getStatus().canBeAssigned()) {
             throw AppException.badRequest(ErrorCode.INVALID_STATUS_TRANSITION);
         }
+
+        assignmentRepository
+            .findByAssetIdAndReturnedAtIsNull(assetId)
+            .ifPresent(current -> completeAssetReturnProcess(asset, current, "Auto-returned: reassigned by admin", assignedBy));
 
         User targetUser = null;
         Department targetDept = null;
@@ -99,22 +97,22 @@ public class AssignmentService {
             .build();
         assignment = assignmentRepository.save(assignment);
 
-        asset.setStatus(AssetStatus.ASSIGNED);
-        asset.setOwner(targetUser);
         asset.setDepartment(targetDept);
         asset.setBranch(targetBranch);
+        if (hasUser) {
+            asset.setStatus(AssetStatus.ASSIGNED);
+            asset.setOwner(targetUser);
+        }
         assetRepository.save(asset);
-
-        Branch assignedToBranch = targetBranch;
 
         historyRepository.save(AssetHistory.builder()
             .asset(asset)
             .action(AssetAction.ASSIGNED)
             .oldStatus(prevStatus)
-            .newStatus(AssetStatus.ASSIGNED)
+            .newStatus(asset.getStatus())
             .toUser(targetUser)
             .toDept(targetDept)
-            .toBranch(assignedToBranch)
+            .toBranch(targetBranch)
             .changedBy(assignedBy)
             .build());
         return AssignmentResponse.from(assignment);
@@ -191,11 +189,10 @@ public class AssignmentService {
             return assetService.buildResponse(asset);
         }
 
-        if (current == AssetStatus.ASSIGNED && target == AssetStatus.IN_REPAIR) {
-            // close assignment record 
-            // but keep owner in asset
-            Optional<AssetAssignment> active = assignmentRepository.findByAssetIdAndReturnedAtIsNull(assetId);
-            active.ifPresent(a -> {
+        if (target == AssetStatus.IN_REPAIR) {
+            // closing any open assignment (whether its user/dept/branch level)
+            // owner field intentionally kept so repair history shows who had it last
+            assignmentRepository.findByAssetIdAndReturnedAtIsNull(assetId).ifPresent(a -> {
                 a.setReturnedAt(Instant.now());
                 a.setReturnNotes("Auto-closed: asset sent to repair");
                 assignmentRepository.save(a);
