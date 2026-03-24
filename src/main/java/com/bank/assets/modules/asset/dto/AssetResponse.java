@@ -21,6 +21,7 @@ public record AssetResponse(
         AssetStatus status,
         UserInfo owner,
         DeptInfo department,
+        BranchInfo branch,
         LocalDate purchaseDate,
         LocalDate warrantyUntil,
         BigDecimal purchasePrice,
@@ -35,6 +36,7 @@ public record AssetResponse(
     public record TypeInfo(UUID id, String name) {}
     public record UserInfo(UUID id, String fullName, String email) {}
     public record DeptInfo(UUID id, String name) {}
+    public record BranchInfo(UUID id, String name) {}
 
     public static AssetResponse from(Asset a) {
         return new AssetResponse(
@@ -55,7 +57,10 @@ public record AssetResponse(
                         ? new UserInfo(a.getOwner().getId(), a.getOwner().getFullName(), a.getOwner().getEmail()) 
                         : null,
                 a.getDepartment() != null
-                        ? new DeptInfo(a.getDepartment().getId(), a.getDepartment().getName()) 
+                        ? new DeptInfo(a.getDepartment().getId(), a.getDepartment().getName())
+                        : null,
+                a.getBranch() != null
+                        ? new BranchInfo(a.getBranch().getId(), a.getBranch().getName())
                         : null,
                 a.getPurchaseDate(),
                 a.getWarrantyUntil(),
