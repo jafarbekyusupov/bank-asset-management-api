@@ -80,6 +80,10 @@ public class AssetHistory {
     @Column(columnDefinition = "TEXT")
     private String reason;
 
+    @Column(name = "system_note", nullable = false)
+    @Builder.Default
+    private boolean systemNote = false;
+
     @Type(JsonBinaryType.class)
     @Column(columnDefinition = "jsonb")
     @Builder.Default

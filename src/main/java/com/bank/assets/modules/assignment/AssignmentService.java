@@ -170,6 +170,7 @@ public class AssignmentService {
             .fromBranch(returnedFromBranch)
             .changedBy(returnedBy)
             .reason(notes)
+            .systemNote(assignment.isSystemNote())
             .build());
     }
 
