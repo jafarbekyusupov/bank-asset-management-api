@@ -103,6 +103,13 @@ public class AssignmentRequestService {
             throw AppException.conflict(ErrorCode.ASSET_ALREADY_ASSIGNED);
         }
 
+        // close any open dept/branch lvl assignment before assigning to user
+        assignmentRepository.findByAssetIdAndReturnedAtIsNull(asset.getId()).ifPresent(existing -> {
+            existing.setReturnedAt(Instant.now());
+            existing.setReturnNotes("Auto-closed: asset assigned to user via request approval");
+            assignmentRepository.saveAndFlush(existing);
+        });
+
         User assignedToUser = request.getRequestedBy();
 
         AssetAssignment assignment = AssetAssignment.builder()
